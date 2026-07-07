@@ -1,0 +1,10 @@
+native __pawntest_mock_return(const native_name[], value);
+native __pawntest_mock_return_once(const native_name[], value);
+native __pawntest_mock_output(const native_name[], arg_index, value);
+native __pawntest_mock_output_string(const native_name[], arg_index, max_length, const value[]);
+native __pawntest_mock_callback(const native_name[], const callback_name[]);
+native __pawntest_mock_reset(const native_name[]);
+native __pawntest_expect_calls(const native_name[], minimum, maximum, const file[], line);
+native __pawntest_expect_arg(const native_name[], call_index, arg_index, value, const file[], line);
+native __pawntest_expect_string_arg(const native_name[], call_index, arg_index, const value[], const file[], line);
+native __pawntest_expect_order(const native_name[], const file[], line);

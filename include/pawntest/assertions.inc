@@ -1,0 +1,18 @@
+native __pawntest_assert(bool:condition, const expression[], const file[], line);
+native __pawntest_assert_eq(actual, expected, const actual_expr[], const expected_expr[], const file[], line);
+native __pawntest_assert_ne(actual, expected, const actual_expr[], const expected_expr[], const file[], line);
+native __pawntest_assert_str_eq(const actual[], const expected[], const actual_expr[], const expected_expr[], const file[], line);
+native __pawntest_assert_compare(actual, expected, comparison, const actual_expr[], const expected_expr[], const file[], line);
+native __pawntest_assert_string(const actual[], const expected[], comparison, const actual_expr[], const expected_expr[], const file[], line);
+native __pawntest_assert_float_near(Float:actual, Float:expected, Float:tolerance, const actual_expr[], const expected_expr[], const file[], line);
+native __pawntest_assert_array_eq(const actual[], const expected[], length, const actual_expr[], const expected_expr[], const file[], line);
+native __pawntest_assert_between(actual, minimum, maximum, const expression[], const file[], line);
+native __pawntest_assert_has_flag(actual, flag, const expression[], const file[], line);
+native __pt_assert_array_contains(const values[], length, expected, const expression[], const file[], line);
+native __pawntest_assert_str_ieq(const actual[], const expected[], const actual_expr[], const expected_expr[], const file[], line);
+native __pawntest_assert_eq_message(actual, expected, const actual_expr[], const expected_expr[], const message[], const file[], line);
+native __pawntest_expect_error(const callback_name[], const expected[], const file[], line);
+native __pawntest_expect_no_error(const callback_name[], const file[], line);
+native __pawntest_xfail(const callback_name[], const reason[], const file[], line);
+native __pawntest_snapshot(const name[], const value[], const file[], line);
+native __pawntest_fuzz_int(const callback_name[], iterations, minimum, maximum, const file[], line);

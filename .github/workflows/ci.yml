@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - name: Install 32-bit compiler runtime
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo apt-get update && sudo apt-get install -y libc6-i386
+      - run: go test ./...
+      - run: go vet ./...
+      - name: Test with race detector
+        if: matrix.os != 'windows-latest'
+        run: CGO_ENABLED=1 go test -race ./...
+      - run: go test ./... -tags cgo
+        if: matrix.os != 'windows-latest'
+        env:
+          CGO_ENABLED: "1"
+      - run: go build ./cmd/pawntest
+      - name: Test compiler installer against GitHub release
+        if: matrix.os == 'ubuntu-latest'
+        run: go test ./internal/compiler -run TestInstallOpenMPCompilerIntegration -count=1 -v
+        env:
+          PAWNTEST_INSTALL_INTEGRATION: "1"
+      - name: Download official compiler for corpus
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          curl -fsSL -o /tmp/pawnc-linux.tar.gz https://github.com/openmultiplayer/compiler/releases/download/v3.10.11/pawnc-3.10.11-linux.tar.gz
+          echo "13977433acb1dfb23e3ec6354f622115d5073e97aced9395058a9db59d2564c2  /tmp/pawnc-linux.tar.gz" | sha256sum -c -
+          tar -xzf /tmp/pawnc-linux.tar.gz -C /tmp
+      - name: Test canonical C AMX parity
+        if: matrix.os == 'ubuntu-latest'
+        run: go test ./internal/compat -tags amx_c -count=1
+        env:
+          CGO_ENABLED: "1"
+          PAWNTEST_PAWNCC: /tmp/pawnc-3.10.11-linux/bin/pawncc
+          LD_LIBRARY_PATH: /tmp/pawnc-3.10.11-linux/lib
+      - name: Run compiled Pawn corpus
+        if: matrix.os == 'ubuntu-latest'
+        run: go test ./internal/cli -tags integration -run TestPawnCCIntegrationListsAndRunsCompiledSource -count=1 -v
+        env:
+          PAWNTEST_PAWNCC: /tmp/pawnc-3.10.11-linux/bin/pawncc
+          LD_LIBRARY_PATH: /tmp/pawnc-3.10.11-linux/lib

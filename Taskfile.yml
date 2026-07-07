@@ -1,0 +1,44 @@
+version: '3'
+
+tasks:
+  default:
+    deps: [build]
+
+  fmt:
+    desc: Format all Go source files
+    cmds:
+      - gofmt -w .
+
+  test:
+    desc: Run unit tests
+    cmds:
+      - go test ./...
+
+  race:
+    desc: Run unit tests with the race detector
+    cmds:
+      - CGO_ENABLED=1 go test -race ./...
+
+  lint:
+    desc: Run go vet
+    cmds:
+      - go vet ./...
+
+  check:
+    desc: Format, test (with race detector), and vet
+    cmds:
+      - gofmt -w .
+      - go test ./...
+      - CGO_ENABLED=1 go test -race ./...
+      - go vet ./...
+
+  build:
+    desc: Build the pawntest binary into bin/
+    cmds:
+      - mkdir -p bin
+      - go build -o bin/pawntest ./cmd/pawntest
+
+  tidy:
+    desc: Tidy go.mod and go.sum
+    cmds:
+      - go mod tidy

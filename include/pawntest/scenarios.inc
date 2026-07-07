@@ -1,0 +1,9 @@
+native __pawntest_schedule(delay_ms, const callback_name[]);
+native __pawntest_advance_time(milliseconds);
+native __pawntest_run_pending();
+native __pawntest_now();
+native __pt_player_create(const name[]);
+native __pt_player_connected(playerid, bool:connected, const file[], line);
+native __pt_player_money(playerid, expected, const file[], line);
+native __pt_player_message(playerid, const expected[], bool:contains, const file[], line);
+native __pt_player_pos_near(playerid, Float:x, Float:y, Float:z, Float:tolerance, const file[], line);
