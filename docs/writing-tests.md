@@ -274,3 +274,23 @@ TEST(zone_entry)
 ```
 
 Use `TEST_CREATE_PLAYER_GANGZONE` for private zones. The model tracks bounds, visibility, colours, flashing, and containment.
+
+## Dialog scenarios
+
+Show a dialog and simulate its response:
+
+```pawn
+TEST(confirms_action)
+{
+    new playerid = TEST_CREATE_PLAYER("Alice");
+
+    ShowPlayerDialog(playerid, 10, DIALOG_STYLE_MSGBOX, "Confirm", "Continue?", "Yes", "No");
+    ASSERT_DIALOG_VISIBLE(playerid, 10);
+    ASSERT_DIALOG_TITLE(playerid, "Confirm");
+
+    TEST_RESPOND_DIALOG(playerid, true, 0, "");
+    ASSERT_DIALOG_HIDDEN(playerid);
+}
+```
+
+`TEST_RESPOND_DIALOG` calls `OnDialogResponse` with the modeled dialog ID and response values.

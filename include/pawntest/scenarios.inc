@@ -54,3 +54,7 @@ native __pt_gangzone_inside(playerid, zoneid, bool:inside, const file[], line);
 native __pt_player_gangzone_create(playerid, Float:minX, Float:minY, Float:maxX, Float:maxY);
 native __pt_player_gangzone_valid(playerid, zoneid, const file[], line);
 native __pt_player_gangzone_visible(playerid, zoneid, bool:visible, const file[], line);
+native __pt_dialog_respond(playerid, bool:response, listitem, const inputtext[]);
+native __pt_dialog_visible(playerid, dialogid, bool:visible, const file[], line);
+native __pt_dialog_title(playerid, const expected[], const file[], line);
+native __pt_dialog_body(playerid, const expected[], const file[], line);
