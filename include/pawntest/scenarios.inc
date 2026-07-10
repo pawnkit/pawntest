@@ -18,3 +18,8 @@ native __pt_object_model(objectid, modelid, const file[], line);
 native __pt_object_pos_near(objectid, Float:x, Float:y, Float:z, Float:tolerance, const file[], line);
 native __pt_player_object_create(playerid, modelid, Float:x, Float:y, Float:z);
 native __pt_player_object_valid(playerid, objectid, const file[], line);
+native __pt_actor_create(skin, Float:x, Float:y, Float:z, Float:angle);
+native __pt_actor_valid(actorid, const file[], line);
+native __pt_actor_skin(actorid, skin, const file[], line);
+native __pt_actor_health(actorid, Float:health, const file[], line);
+native __pt_actor_pos_near(actorid, Float:x, Float:y, Float:z, Float:tolerance, const file[], line);

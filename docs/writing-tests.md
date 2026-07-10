@@ -167,3 +167,21 @@ TEST(moving_gate)
 ```
 
 Use `TEST_CREATE_PLAYER_OBJECT(playerid, modelid, x, y, z)` and `ASSERT_PLAYER_OBJECT_VALID` for player objects. The model tracks transforms, movement, materials, camera collision, and attachments.
+
+## Actor scenarios
+
+Create actors and test their state:
+
+```pawn
+TEST(actor_damage)
+{
+    new actorid = TEST_CREATE_ACTOR(7, 10.0, 20.0, 30.0, 90.0);
+
+    SetActorHealth(actorid, 75.0);
+    ASSERT_ACTOR_VALID(actorid);
+    ASSERT_ACTOR_SKIN(actorid, 7);
+    ASSERT_ACTOR_HEALTH(actorid, 75.0);
+}
+```
+
+The actor model tracks transforms, health, skins, virtual worlds, invulnerability, animations, and player streaming.

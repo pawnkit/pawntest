@@ -76,7 +76,7 @@ type scenarioRegistry struct {
 }
 
 func newScenarioRegistry() *scenarioRegistry {
-	return &scenarioRegistry{modules: []scenarioModule{newOpenMPState(), newVehicleState(), newObjectState()}}
+	return &scenarioRegistry{modules: []scenarioModule{newOpenMPState(), newVehicleState(), newObjectState(), newActorState()}}
 }
 
 func registerScenarioNatives(vm backend.VM, natives map[string]backend.NativeFunc, mocks *mockState, allowUnknown bool) error {

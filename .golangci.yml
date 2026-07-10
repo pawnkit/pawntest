@@ -117,6 +117,9 @@ linters:
       - linters:
           - dupl
         path: internal/runner/openmp_(player_)?objects.*\.go
+      - linters:
+          - dupl
+        path: internal/runner/openmp_(actors_assertions|vehicles)\.go
 
   settings:
     dupl:

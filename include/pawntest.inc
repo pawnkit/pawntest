@@ -99,6 +99,21 @@ public __pawntest_marker()
 #define ASSERT_PLAYER_OBJECT_VALID(%0,%1) \
     if (!__pt_player_object_valid((%0), (%1), __file, __line)) return 0
 
+#define TEST_CREATE_ACTOR(%0,%1,%2,%3,%4) \
+    __pt_actor_create((%0), (%1), (%2), (%3), (%4))
+
+#define ASSERT_ACTOR_VALID(%0) \
+    if (!__pt_actor_valid((%0), __file, __line)) return 0
+
+#define ASSERT_ACTOR_SKIN(%0,%1) \
+    if (!__pt_actor_skin((%0), (%1), __file, __line)) return 0
+
+#define ASSERT_ACTOR_HEALTH(%0,%1) \
+    if (!__pt_actor_health((%0), (%1), __file, __line)) return 0
+
+#define ASSERT_ACTOR_POS_NEAR(%0,%1,%2,%3,%4) \
+    if (!__pt_actor_pos_near((%0), (%1), (%2), (%3), (%4), __file, __line)) return 0
+
 #define ASSERT(%0) \
     if (!__pawntest_assert((%0), #%0, __file, __line)) return 0
 
