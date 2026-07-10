@@ -1,6 +1,6 @@
 # Fixtures
 
-Fixture hooks are optional. Prefer the declarative form:
+Use hooks for shared setup and cleanup:
 
 ```pawn
 BEFORE_ALL() {}
@@ -9,21 +9,28 @@ AFTER_EACH() {}
 AFTER_ALL() {}
 ```
 
-Execution order:
+They run in this order:
 
 ```text
 BEFORE_ALL
   BEFORE_EACH
-  test body
+  test
   AFTER_EACH
 AFTER_ALL
 ```
 
-Fixture hooks are not listed as tests. A failing setup prevents the body from
-running, but per-test and suite cleanup still run. Failures from the body,
-named teardown, file teardown, and mock verification are aggregated in phase
-order rather than replacing one another.
+Cleanup hooks still run after a failure.
 
-Named fixtures use `FIXTURE_SETUP(name)`, `FIXTURE_TEARDOWN(name)`, and
-`USE_FIXTURE(name)`. Acquired named fixtures always tear down in reverse order,
-including when a later setup step fails.
+Use named fixtures for reusable, opt-in setup:
+
+```pawn
+FIXTURE_SETUP(database) {}
+FIXTURE_TEARDOWN(database) {}
+
+TEST(example)
+{
+    USE_FIXTURE(database);
+}
+```
+
+Named fixtures are cleaned up in reverse order.
