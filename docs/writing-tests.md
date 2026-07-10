@@ -220,3 +220,19 @@ TEST(reaches_checkpoint)
 ```
 
 Equivalent `ASSERT_RACE_CHECKPOINT_*` helpers cover race checkpoints.
+
+## Text label scenarios
+
+Create global or player-scoped 3D text labels:
+
+```pawn
+TEST(welcome_label)
+{
+    new labelid = TEST_CREATE_TEXT_LABEL("Welcome", -1, 10.0, 20.0, 30.0, 50.0, 0);
+
+    ASSERT_TEXT_LABEL_VALID(labelid);
+    ASSERT_TEXT_LABEL_TEXT(labelid, "Welcome");
+}
+```
+
+Use `TEST_CREATE_PLAYER_TEXT_LABEL` for private labels. The model tracks text, colour, position, draw distance, virtual world, line of sight, streaming, and attachments.
