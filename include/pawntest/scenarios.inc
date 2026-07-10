@@ -83,3 +83,6 @@ native __pt_npc_valid(npcid, const file[], line);
 native __pt_npc_spawned(npcid, bool:spawned, const file[], line);
 native __pt_npc_health(npcid, Float:expected, Float:tolerance, const file[], line);
 native __pt_npc_pos_near(npcid, Float:x, Float:y, Float:z, Float:tolerance, const file[], line);
+native __pt_npc_weapon(npcid, expected, const file[], line);
+native __pt_npc_aiming(npcid, bool:aiming, const file[], line);
+native __pt_npc_animation(npcid, const library[], const name[], const file[], line);

@@ -1,6 +1,10 @@
 package runner
 
-import "github.com/pawnkit/pawntest/internal/backend"
+import (
+	"maps"
+
+	"github.com/pawnkit/pawntest/internal/backend"
+)
 
 type testNPC struct {
 	name                         string
@@ -12,6 +16,23 @@ type testNPC struct {
 	world, skin, interior        int
 	movePlayer                   int
 	vehicle, seat                int
+	weapon, ammo, ammoInClip     int
+	keys                         [3]int
+	melee, reloadEnabled         bool
+	reloading, infiniteAmmo      bool
+	weaponState, fightingStyle   int
+	shooting, aiming             bool
+	aimPlayer                    int
+	aimPoint                     [3]float32
+	weaponAccuracy               map[int]float32
+	weaponReloadTime             map[int]int
+	weaponShootTime              map[int]int
+	weaponClipSize               map[int]int
+	weaponSkills                 map[int]int
+	animationID                  int
+	animation                    actorAnimation
+	hasAnimation                 bool
+	specialAction                int
 }
 
 type npcState struct {
@@ -31,6 +52,11 @@ func (state *npcState) Clone() scenarioModule {
 	clone.next = state.next
 	for id, npc := range state.npcs {
 		npcCopy := *npc
+		npcCopy.weaponAccuracy = maps.Clone(npc.weaponAccuracy)
+		npcCopy.weaponReloadTime = maps.Clone(npc.weaponReloadTime)
+		npcCopy.weaponShootTime = maps.Clone(npc.weaponShootTime)
+		npcCopy.weaponClipSize = maps.Clone(npc.weaponClipSize)
+		npcCopy.weaponSkills = maps.Clone(npc.weaponSkills)
 		clone.npcs[id] = &npcCopy
 	}
 
@@ -45,7 +71,7 @@ func (state *npcState) Register(vm backend.VM, context *executionContext) error 
 }
 
 func (state *npcState) natives(result *nativeState) map[string]backend.NativeFunc {
-	return map[string]backend.NativeFunc{
+	natives := map[string]backend.NativeFunc{
 		"__pt_npc_create": state.createNPC, "__pt_npc_valid": state.assertValid(result),
 		"__pt_npc_spawned": state.assertSpawned(result), "__pt_npc_health": state.assertHealth(result),
 		"__pt_npc_pos_near": state.assertPosition(result), "NPC_Create": state.createNPC,
@@ -73,6 +99,9 @@ func (state *npcState) natives(result *nativeState) map[string]backend.NativeFun
 		"NPC_GetVehicleID": state.getNPCVehicle, "NPC_GetVehicleSeat": state.getNPCVehicleSeat,
 		"NPC_EnterVehicle": state.putNPCInVehicle, "NPC_ExitVehicle": state.removeNPCFromVehicle,
 	}
+	maps.Copy(natives, state.combatNatives(result))
+
+	return natives
 }
 
 func (state *npcState) createNPC(ctx backend.NativeContext, params []backend.Cell) (backend.Cell, error) {
@@ -87,7 +116,11 @@ func (state *npcState) createNPC(ctx backend.NativeContext, params []backend.Cel
 
 	id := state.next
 	state.next++
-	state.npcs[id] = &testNPC{name: name, health: 100, movePlayer: -1, vehicle: -1, seat: -1}
+	state.npcs[id] = &testNPC{
+		name: name, health: 100, movePlayer: -1, vehicle: -1, seat: -1, aimPlayer: -1,
+		weaponAccuracy: map[int]float32{}, weaponReloadTime: map[int]int{}, weaponShootTime: map[int]int{},
+		weaponClipSize: map[int]int{}, weaponSkills: map[int]int{},
+	}
 
 	return backend.Cell(id), nil
 }

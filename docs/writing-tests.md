@@ -396,3 +396,16 @@ TEST(moves_guard)
 ```
 
 The core NPC model covers lifecycle, transforms, movement, streaming, appearance, health, armour, invulnerability, and vehicle placement.
+
+NPC combat and animations are also stateful:
+
+```pawn
+NPC_SetWeapon(npcid, WEAPON_COLT45);
+NPC_SetAmmo(npcid, 50);
+NPC_AimAtPlayer(npcid, playerid, true);
+NPC_ApplyAnimation(npcid, "PED", "WALK_player", 4.1, true, false, false, false, 500);
+
+ASSERT_NPC_WEAPON(npcid, WEAPON_COLT45);
+ASSERT_NPC_AIMING(npcid);
+ASSERT_NPC_ANIMATION(npcid, "PED", "WALK_player");
+```

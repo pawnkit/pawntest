@@ -103,6 +103,67 @@ func TestNPCCoreScenarioCloneIsolatesState(t *testing.T) {
 	}
 }
 
+func TestNPCCombatScenarioStoresWeaponsAndAim(t *testing.T) {
+	vm, registry := registeredScenarios(t)
+	vm.strings[100], vm.strings[200] = "Alice", "Guard"
+	playerID := callScenarioNative(t, vm, "__pt_player_create", 100)
+	npcID := callScenarioNative(t, vm, "NPC_Create", 200)
+
+	callScenarioNative(t, vm, "NPC_SetWeapon", npcID, 24)
+	callScenarioNative(t, vm, "NPC_SetAmmo", npcID, 50)
+	callScenarioNative(t, vm, "NPC_SetAmmoInClip", npcID, 7)
+	callScenarioNative(t, vm, "NPC_AimAtPlayer", npcID, playerID, 1)
+	callScenarioNative(t, vm, "NPC_SetWeaponAccuracy", npcID, 24, floatCell(0.75))
+
+	npc := npcScenarioState(t, registry).npcs[int(npcID)]
+	if npc.weapon != 24 || npc.ammo != 50 || npc.ammoInClip != 7 {
+		t.Fatalf("unexpected NPC weapon state: %#v", npc)
+	}
+
+	if !npc.aiming || !npc.shooting || npc.aimPlayer != int(playerID) || npc.weaponAccuracy[24] != 0.75 {
+		t.Fatalf("unexpected NPC aim state: %#v", npc)
+	}
+}
+
+func TestNPCAnimationScenarioStoresAnimation(t *testing.T) {
+	vm, registry := registeredScenarios(t)
+	vm.strings[100], vm.strings[200], vm.strings[300] = "Guard", "PED", "WALK_player"
+	npcID := callScenarioNative(t, vm, "NPC_Create", 100)
+
+	result := callScenarioNative(t, vm, "NPC_ApplyAnimation", npcID, 200, 300, floatCell(4.1), 1, 0, 1, 0, 500)
+	if result != 1 {
+		t.Fatalf("NPC_ApplyAnimation returned %d", result)
+	}
+
+	npc := npcScenarioState(t, registry).npcs[int(npcID)]
+	if !npc.hasAnimation || npc.animation.library != "PED" || npc.animation.name != "WALK_player" || !npc.animation.loop {
+		t.Fatalf("unexpected NPC animation: %#v", npc.animation)
+	}
+
+	callScenarioNative(t, vm, "NPC_ClearAnimations", npcID)
+
+	if npc.hasAnimation {
+		t.Fatal("NPC animation remained active")
+	}
+}
+
+func TestNPCCombatCloneIsolatesWeaponSettings(t *testing.T) {
+	state := newNPCState()
+	state.npcs[0] = &testNPC{weaponAccuracy: map[int]float32{24: 0.5}, weaponSkills: map[int]int{0: 100}}
+
+	clone, ok := state.Clone().(*npcState)
+	if !ok {
+		t.Fatal("cloned scenario was not NPC state")
+	}
+
+	clone.npcs[0].weaponAccuracy[24] = 1
+	clone.npcs[0].weaponSkills[0] = 999
+
+	if state.npcs[0].weaponAccuracy[24] != 0.5 || state.npcs[0].weaponSkills[0] != 100 {
+		t.Fatal("NPC combat clone shared mutable state")
+	}
+}
+
 func npcScenarioState(t *testing.T, registry *scenarioRegistry) *npcState {
 	t.Helper()
 

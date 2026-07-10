@@ -333,6 +333,18 @@ public __pawntest_marker()
 #define ASSERT_NPC_POS_NEAR(%0,%1,%2,%3,%4) \
     if (!__pt_npc_pos_near((%0), (%1), (%2), (%3), (%4), __file, __line)) return 0
 
+#define ASSERT_NPC_WEAPON(%0,%1) \
+    if (!__pt_npc_weapon((%0), (%1), __file, __line)) return 0
+
+#define ASSERT_NPC_AIMING(%0) \
+    if (!__pt_npc_aiming((%0), true, __file, __line)) return 0
+
+#define ASSERT_NPC_NOT_AIMING(%0) \
+    if (!__pt_npc_aiming((%0), false, __file, __line)) return 0
+
+#define ASSERT_NPC_ANIMATION(%0,%1,%2) \
+    if (!__pt_npc_animation((%0), (%1), (%2), __file, __line)) return 0
+
 #define ASSERT(%0) \
     if (!__pawntest_assert((%0), #%0, __file, __line)) return 0
 

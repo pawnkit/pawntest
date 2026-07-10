@@ -8,21 +8,12 @@ func (state *actorState) applyActorAnimation(ctx backend.NativeContext, params [
 		return 0, nil
 	}
 
-	library, err := ctx.ReadString(params[1])
+	animation, err := readAnimation(ctx, params[1:9])
 	if err != nil {
 		return 0, err
 	}
 
-	name, err := ctx.ReadString(params[2])
-	if err != nil {
-		return 0, err
-	}
-
-	actor.animation = actorAnimation{
-		library: library, name: name, delta: cellFloat(params[3]),
-		loop: params[4] != 0, lockX: params[5] != 0, lockY: params[6] != 0,
-		freeze: params[7] != 0, time: int(params[8]),
-	}
+	actor.animation = animation
 	actor.hasAnimation = true
 
 	return 1, nil

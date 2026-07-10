@@ -22,3 +22,21 @@ func writeEntityIDs(ctx backend.NativeContext, params []backend.Cell, ids []int)
 
 	return backend.Cell(limit), nil
 }
+
+func readAnimation(ctx backend.NativeContext, params []backend.Cell) (actorAnimation, error) {
+	library, err := ctx.ReadString(params[0])
+	if err != nil {
+		return actorAnimation{}, err
+	}
+
+	name, err := ctx.ReadString(params[1])
+	if err != nil {
+		return actorAnimation{}, err
+	}
+
+	return actorAnimation{
+		library: library, name: name, delta: cellFloat(params[2]),
+		loop: params[3] != 0, lockX: params[4] != 0, lockY: params[5] != 0,
+		freeze: params[6] != 0, time: int(params[7]),
+	}, nil
+}
