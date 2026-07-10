@@ -150,3 +150,20 @@ TEST(vehicle_damage)
 ```
 
 The vehicle model tracks transforms, health, appearance, components, damage, trailers, parameters, respawns, and occupants.
+
+## Object scenarios
+
+Create global or player-scoped objects:
+
+```pawn
+TEST(moving_gate)
+{
+    new objectid = TEST_CREATE_OBJECT(19379, 0.0, 0.0, 5.0);
+
+    MoveObject(objectid, 0.0, 0.0, 10.0, 2.0);
+    ASSERT_OBJECT_VALID(objectid);
+    ASSERT_OBJECT_MODEL(objectid, 19379);
+}
+```
+
+Use `TEST_CREATE_PLAYER_OBJECT(playerid, modelid, x, y, z)` and `ASSERT_PLAYER_OBJECT_VALID` for player objects. The model tracks transforms, movement, materials, camera collision, and attachments.

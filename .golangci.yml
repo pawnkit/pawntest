@@ -114,6 +114,9 @@ linters:
       - linters:
           - nestif
         path: internal/runner/fuzz\.go
+      - linters:
+          - dupl
+        path: internal/runner/openmp_(player_)?objects.*\.go
 
   settings:
     dupl:
