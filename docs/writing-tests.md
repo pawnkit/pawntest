@@ -315,3 +315,24 @@ TEST(selects_item)
 ```
 
 Selection and exit helpers call `OnPlayerSelectedMenuRow` and `OnPlayerExitedMenu`.
+
+## Class scenarios
+
+Add a class, select it, and spawn the player:
+
+```pawn
+TEST(selects_class)
+{
+    AddPlayerClass(7, 10.0, 20.0, 30.0, 90.0);
+    new playerid = TEST_CREATE_PLAYER("Alice");
+
+    TEST_SELECT_CLASS(playerid, 0);
+    ASSERT_CLASS_COUNT(1);
+    ASSERT_PLAYER_CLASS(playerid, 0);
+
+    SpawnPlayer(playerid);
+    ASSERT_PLAYER_NOT_SELECTING_CLASS(playerid);
+}
+```
+
+Class selection calls `OnPlayerRequestClass`. Spawning applies the selected spawn data and calls `OnPlayerSpawn`.

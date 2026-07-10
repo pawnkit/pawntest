@@ -63,3 +63,7 @@ native __pt_menu_exit(playerid);
 native __pt_menu_valid(menuid, const file[], line);
 native __pt_menu_visible(playerid, menuid, bool:visible, const file[], line);
 native __pt_menu_items(menuid, column, expected, const file[], line);
+native __pt_class_select(playerid, classid);
+native __pt_class_count(expected, const file[], line);
+native __pt_player_class(playerid, classid, const file[], line);
+native __pt_player_selecting_class(playerid, bool:selecting, const file[], line);

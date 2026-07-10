@@ -267,6 +267,21 @@ public __pawntest_marker()
 #define ASSERT_MENU_ITEMS(%0,%1,%2) \
     if (!__pt_menu_items((%0), (%1), (%2), __file, __line)) return 0
 
+#define TEST_SELECT_CLASS(%0,%1) \
+    __pt_class_select((%0), (%1))
+
+#define ASSERT_CLASS_COUNT(%0) \
+    if (!__pt_class_count((%0), __file, __line)) return 0
+
+#define ASSERT_PLAYER_CLASS(%0,%1) \
+    if (!__pt_player_class((%0), (%1), __file, __line)) return 0
+
+#define ASSERT_PLAYER_SELECTING_CLASS(%0) \
+    if (!__pt_player_selecting_class((%0), true, __file, __line)) return 0
+
+#define ASSERT_PLAYER_NOT_SELECTING_CLASS(%0) \
+    if (!__pt_player_selecting_class((%0), false, __file, __line)) return 0
+
 #define ASSERT(%0) \
     if (!__pawntest_assert((%0), #%0, __file, __line)) return 0
 
