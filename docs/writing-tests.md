@@ -294,3 +294,24 @@ TEST(confirms_action)
 ```
 
 `TEST_RESPOND_DIALOG` calls `OnDialogResponse` with the modeled dialog ID and response values.
+
+## Menu scenarios
+
+Build a menu and simulate a row selection:
+
+```pawn
+TEST(selects_item)
+{
+    new playerid = TEST_CREATE_PLAYER("Alice");
+    new Menu:menuid = CreateMenu("Shop", 1, 10.0, 20.0, 100.0);
+
+    AddMenuItem(menuid, 0, "Health");
+    ShowMenuForPlayer(menuid, playerid);
+
+    ASSERT_MENU_VISIBLE(playerid, menuid);
+    ASSERT_MENU_ITEMS(menuid, 0, 1);
+    TEST_SELECT_MENU_ROW(playerid, 0);
+}
+```
+
+Selection and exit helpers call `OnPlayerSelectedMenuRow` and `OnPlayerExitedMenu`.

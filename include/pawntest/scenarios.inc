@@ -58,3 +58,8 @@ native __pt_dialog_respond(playerid, bool:response, listitem, const inputtext[])
 native __pt_dialog_visible(playerid, dialogid, bool:visible, const file[], line);
 native __pt_dialog_title(playerid, const expected[], const file[], line);
 native __pt_dialog_body(playerid, const expected[], const file[], line);
+native __pt_menu_select(playerid, row);
+native __pt_menu_exit(playerid);
+native __pt_menu_valid(menuid, const file[], line);
+native __pt_menu_visible(playerid, menuid, bool:visible, const file[], line);
+native __pt_menu_items(menuid, column, expected, const file[], line);
