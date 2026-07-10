@@ -2,7 +2,8 @@
     // See https://containers.dev/implementors/json_reference/
     // User defined settings
     "containerEnv": {
-        "TZ": ""
+        "TZ": "",
+        "SSH_AUTH_SOCK": "/root/.1password/agent.sock"
     },
     // Fixed settings
     "name": "pawntest-dev",
@@ -43,6 +44,11 @@
         {
             "source": "${localEnv:HOME}/.earthly",
             "target": "/root/.earthly",
+            "type": "bind"
+        },
+        {
+            "source": "${localEnv:HOME}/.1password",
+            "target": "/root/.1password",
             "type": "bind"
         },
         // Docker socket to access the host Docker server
