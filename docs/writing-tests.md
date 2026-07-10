@@ -254,3 +254,23 @@ TEST(shows_title)
 ```
 
 Use `TEST_CREATE_PLAYER_TEXTDRAW` for private textdraws. The model tracks styling, text, position, visibility, selection, and model previews.
+
+## Gang zone scenarios
+
+Create global or player-scoped gang zones:
+
+```pawn
+TEST(zone_entry)
+{
+    new playerid = TEST_CREATE_PLAYER("Alice");
+    new zoneid = TEST_CREATE_GANGZONE(0.0, 0.0, 100.0, 100.0);
+
+    GangZoneShowForPlayer(playerid, zoneid, -1);
+    SetPlayerPos(playerid, 50.0, 50.0, 0.0);
+
+    ASSERT_GANGZONE_VISIBLE(playerid, zoneid);
+    ASSERT_PLAYER_IN_GANGZONE(playerid, zoneid);
+}
+```
+
+Use `TEST_CREATE_PLAYER_GANGZONE` for private zones. The model tracks bounds, visibility, colours, flashing, and containment.
