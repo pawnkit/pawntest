@@ -73,3 +73,8 @@ native __pt_svar_string(const name[], const expected[], const file[], line);
 native __pt_pvar_int(playerid, const name[], expected, const file[], line);
 native __pt_pvar_float(playerid, const name[], Float:expected, Float:tolerance, const file[], line);
 native __pt_pvar_string(playerid, const name[], const expected[], const file[], line);
+native __pt_server_weather(expected, const file[], line);
+native __pt_server_time(expected, const file[], line);
+native __pt_server_gravity(Float:expected, Float:tolerance, const file[], line);
+native __pt_server_mode_text(const expected[], const file[], line);
+native __pt_server_rule(const name[], const expected[], const file[], line);

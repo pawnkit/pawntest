@@ -355,3 +355,24 @@ TEST(stores_state)
 ```
 
 Integer, float, and string values support type lookup, enumeration, replacement, and deletion.
+
+## Server scenarios
+
+Server settings are stored and queryable:
+
+```pawn
+TEST(configures_world)
+{
+    SetWeather(10);
+    SetWorldTime(18);
+    SetGravity(0.01);
+    SetGameModeText("Freeroam");
+
+    ASSERT_SERVER_WEATHER(10);
+    ASSERT_SERVER_TIME(18);
+    ASSERT_SERVER_GRAVITY(0.01, 0.001);
+    ASSERT_GAME_MODE_TEXT("Freeroam");
+}
+```
+
+The model also tracks server rules, nickname characters, client settings, pool sizes, and common server toggles.

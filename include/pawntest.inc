@@ -300,6 +300,21 @@ public __pawntest_marker()
 #define ASSERT_PVAR_STRING(%0,%1,%2) \
     if (!__pt_pvar_string((%0), (%1), (%2), __file, __line)) return 0
 
+#define ASSERT_SERVER_WEATHER(%0) \
+    if (!__pt_server_weather((%0), __file, __line)) return 0
+
+#define ASSERT_SERVER_TIME(%0) \
+    if (!__pt_server_time((%0), __file, __line)) return 0
+
+#define ASSERT_SERVER_GRAVITY(%0,%1) \
+    if (!__pt_server_gravity((%0), (%1), __file, __line)) return 0
+
+#define ASSERT_GAME_MODE_TEXT(%0) \
+    if (!__pt_server_mode_text((%0), __file, __line)) return 0
+
+#define ASSERT_SERVER_RULE(%0,%1) \
+    if (!__pt_server_rule((%0), (%1), __file, __line)) return 0
+
 #define ASSERT(%0) \
     if (!__pawntest_assert((%0), #%0, __file, __line)) return 0
 

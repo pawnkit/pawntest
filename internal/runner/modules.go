@@ -76,7 +76,17 @@ type scenarioRegistry struct {
 }
 
 func newScenarioRegistry() *scenarioRegistry {
-	return &scenarioRegistry{modules: []scenarioModule{newOpenMPState(), newVehicleState(), newObjectState(), newActorState(), newPickupState(), newCheckpointState(), newTextLabelState(), newTextDrawState(), newGangZoneState(), newDialogState(), newMenuState(), newClassState(), newVariableState()}}
+	return &scenarioRegistry{modules: []scenarioModule{newOpenMPState(), newVehicleState(), newObjectState(), newActorState(), newPickupState(), newCheckpointState(), newTextLabelState(), newTextDrawState(), newGangZoneState(), newDialogState(), newMenuState(), newClassState(), newVariableState(), newServerState()}}
+}
+
+func (registry *scenarioRegistry) actorState() *actorState {
+	for _, module := range registry.modules {
+		if state, ok := module.(*actorState); ok {
+			return state
+		}
+	}
+
+	return nil
 }
 
 func registerScenarioNatives(vm backend.VM, natives map[string]backend.NativeFunc, mocks *mockState, allowUnknown bool) error {
