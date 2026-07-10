@@ -3,6 +3,7 @@ package runner
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"math"
 	"strings"
 
@@ -10,11 +11,22 @@ import (
 )
 
 type testPlayer struct {
-	name      string
-	connected bool
-	money     int
-	x, y, z   float32
-	messages  []string
+	name                       string
+	connected, spawned         bool
+	controllable, ghost, clock bool
+	money, score, team, colour int
+	skin, interior, world      int
+	wanted, weather, drunk     int
+	fightingStyle, action      int
+	hour, minute               int
+	health, armour, gravity    float32
+	x, y, z, angle             float32
+	velocity                   [3]float32
+	camera                     [3]float32
+	keys                       [3]backend.Cell
+	weapons                    map[int]int
+	armedWeapon                int
+	messages                   []string
 }
 
 type openMPState struct {
@@ -33,6 +45,8 @@ func (state *openMPState) clone() *openMPState {
 	for id, player := range state.players {
 		playerCopy := *player
 		playerCopy.messages = append([]string(nil), player.messages...)
+		playerCopy.weapons = make(map[int]int, len(player.weapons))
+		maps.Copy(playerCopy.weapons, player.weapons)
 		clone.players[id] = &playerCopy
 	}
 
@@ -63,6 +77,10 @@ func registerOpenMPPlayerNatives(vm backend.VM, nativeState *nativeState, state 
 		"SendClientMessageToAll": state.sendClientMessageToAll,
 		"Kick":                   state.kick,
 	}
+	maps.Copy(natives, state.coreNatives())
+	maps.Copy(natives, state.equipmentNatives())
+	maps.Copy(natives, state.cameraNatives())
+
 	for name, native := range natives {
 		registered := native
 		if !isPawntestNative(name) {
@@ -97,7 +115,15 @@ func (state *openMPState) createPlayer(ctx backend.NativeContext, params []backe
 
 	id := state.nextPlayer
 	state.nextPlayer++
-	state.players[id] = &testPlayer{name: name, connected: true}
+	state.players[id] = &testPlayer{
+		name:         name,
+		connected:    true,
+		spawned:      true,
+		controllable: true,
+		health:       100,
+		gravity:      0.008,
+		weapons:      map[int]int{},
+	}
 
 	return backend.Cell(id), nil
 }
