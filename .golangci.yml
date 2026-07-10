@@ -120,6 +120,11 @@ linters:
       - linters:
           - dupl
         path: internal/runner/openmp_(actors_assertions|npcs_assertions|pickups_assertions|server_assertions|vehicles)\.go
+      - linters:
+          - dupl
+          - nilerr
+          - wsl_v5
+        path: internal/runner/openmp_database.*\.go
 
   settings:
     dupl:

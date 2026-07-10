@@ -425,3 +425,29 @@ ASSERT_NPC_RECORD_COUNT(1);
 ```
 
 Paths, records, surfing data, and node playback are isolated between tests.
+
+## Database scenarios
+
+Database natives run against SQLite:
+
+```pawn
+TEST(stores_player)
+{
+    new DB:database = DB_Open(":memory:");
+    DB_FreeResultSet(DB_ExecuteQuery(database, "CREATE TABLE players (name TEXT)"));
+    DB_FreeResultSet(DB_ExecuteQuery(database, "INSERT INTO players VALUES ('Alice')"));
+
+    new DBResult:result = DB_ExecuteQuery(database, "SELECT name FROM players");
+    new name[16];
+    DB_GetFieldString(result, 0, name, sizeof name);
+
+    ASSERT_STR_EQ(name, "Alice");
+    ASSERT_DATABASE_CONNECTIONS(1);
+    ASSERT_DATABASE_RESULTS(1);
+
+    DB_FreeResultSet(result);
+    DB_Close(database);
+}
+```
+
+Modern and legacy database native names are supported.

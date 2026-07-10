@@ -89,3 +89,5 @@ native __pt_npc_animation(npcid, const library[], const name[], const file[], li
 native __pt_npc_playback(npcid, bool:playing, const file[], line);
 native __pt_npc_path_count(expected, const file[], line);
 native __pt_npc_record_count(expected, const file[], line);
+native __pt_database_connections(expected, const file[], line);
+native __pt_database_results(expected, const file[], line);

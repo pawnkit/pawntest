@@ -357,6 +357,12 @@ public __pawntest_marker()
 #define ASSERT_NPC_RECORD_COUNT(%0) \
     if (!__pt_npc_record_count((%0), __file, __line)) return 0
 
+#define ASSERT_DATABASE_CONNECTIONS(%0) \
+    if (!__pt_database_connections((%0), __file, __line)) return 0
+
+#define ASSERT_DATABASE_RESULTS(%0) \
+    if (!__pt_database_results((%0), __file, __line)) return 0
+
 #define ASSERT(%0) \
     if (!__pawntest_assert((%0), #%0, __file, __line)) return 0
 
