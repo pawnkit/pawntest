@@ -336,3 +336,22 @@ TEST(selects_class)
 ```
 
 Class selection calls `OnPlayerRequestClass`. Spawning applies the selected spawn data and calls `OnPlayerSpawn`.
+
+## Variable scenarios
+
+Server and player variables work without mocks:
+
+```pawn
+TEST(stores_state)
+{
+    new playerid = TEST_CREATE_PLAYER("Alice");
+
+    SetSVarInt("round", 3);
+    SetPVarString(playerid, "role", "admin");
+
+    ASSERT_SVAR_INT("round", 3);
+    ASSERT_PVAR_STRING(playerid, "role", "admin");
+}
+```
+
+Integer, float, and string values support type lookup, enumeration, replacement, and deletion.

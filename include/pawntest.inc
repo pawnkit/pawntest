@@ -282,6 +282,24 @@ public __pawntest_marker()
 #define ASSERT_PLAYER_NOT_SELECTING_CLASS(%0) \
     if (!__pt_player_selecting_class((%0), false, __file, __line)) return 0
 
+#define ASSERT_SVAR_INT(%0,%1) \
+    if (!__pt_svar_int((%0), (%1), __file, __line)) return 0
+
+#define ASSERT_SVAR_FLOAT(%0,%1,%2) \
+    if (!__pt_svar_float((%0), (%1), (%2), __file, __line)) return 0
+
+#define ASSERT_SVAR_STRING(%0,%1) \
+    if (!__pt_svar_string((%0), (%1), __file, __line)) return 0
+
+#define ASSERT_PVAR_INT(%0,%1,%2) \
+    if (!__pt_pvar_int((%0), (%1), (%2), __file, __line)) return 0
+
+#define ASSERT_PVAR_FLOAT(%0,%1,%2,%3) \
+    if (!__pt_pvar_float((%0), (%1), (%2), (%3), __file, __line)) return 0
+
+#define ASSERT_PVAR_STRING(%0,%1,%2) \
+    if (!__pt_pvar_string((%0), (%1), (%2), __file, __line)) return 0
+
 #define ASSERT(%0) \
     if (!__pawntest_assert((%0), #%0, __file, __line)) return 0
 
