@@ -20,13 +20,16 @@ func TestIncludeDirInWritesEmbeddedIncludeWhenMissing(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	data, err := os.ReadFile(filepath.Join(dir, "pawntest.inc"))
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if len(data) == 0 {
 		t.Fatal("cached pawntest.inc is empty")
 	}
+
 	for _, relative := range []string{"pawntest/core.inc", "pawntest/assertions.inc", "pawntest/mocks.inc", "pawntest/scenarios.inc"} {
 		if _, err := os.Stat(filepath.Join(dir, filepath.FromSlash(relative))); err != nil {
 			t.Fatalf("embedded include module %s was not extracted: %v", relative, err)
@@ -36,23 +39,30 @@ func TestIncludeDirInWritesEmbeddedIncludeWhenMissing(t *testing.T) {
 
 func TestIncludeDirInDoesNotRewriteUnchangedInclude(t *testing.T) {
 	base := t.TempDir()
+
 	dir, err := IncludeDirIn(base)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	path := filepath.Join(dir, "pawntest.inc")
+
 	before, err := os.Stat(path)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	time.Sleep(10 * time.Millisecond)
+
 	if _, err := IncludeDirIn(base); err != nil {
 		t.Fatal(err)
 	}
+
 	after, err := os.Stat(path)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if !after.ModTime().Equal(before.ModTime()) {
 		t.Fatalf("IncludeDirIn rewrote unchanged include: before %s after %s", before.ModTime(), after.ModTime())
 	}
@@ -60,21 +70,26 @@ func TestIncludeDirInDoesNotRewriteUnchangedInclude(t *testing.T) {
 
 func TestIncludeDirInRefreshesStaleInclude(t *testing.T) {
 	base := t.TempDir()
+
 	dir, err := IncludeDirIn(base)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	path := filepath.Join(dir, "pawntest.inc")
 	if err := os.WriteFile(path, []byte("stale"), 0o644); err != nil {
 		t.Fatal(err)
 	}
+
 	if _, err := IncludeDirIn(base); err != nil {
 		t.Fatal(err)
 	}
+
 	data, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if string(data) == "stale" {
 		t.Fatal("IncludeDirIn did not refresh stale include")
 	}
@@ -87,10 +102,12 @@ func TestEmbeddedNativeNamesFitPawnSymbolLimit(t *testing.T) {
 		if !strings.HasPrefix(line, "native ") {
 			continue
 		}
+
 		name := strings.TrimPrefix(line, "native ")
 		if index := strings.IndexByte(name, '('); index >= 0 {
 			name = name[:index]
 		}
+
 		if len(name) > 31 {
 			t.Errorf("pawntest.inc:%d native %q exceeds Pawn's 31-character symbol limit", lineNumber+1, name)
 		}

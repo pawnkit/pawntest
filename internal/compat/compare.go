@@ -31,6 +31,7 @@ func Compare(leftName string, left backend.Backend, rightName string, right back
 		return Result{}, fmt.Errorf("%s load: %w", leftName, err)
 	}
 	defer leftVM.Close()
+
 	rightVM, err := right.LoadBytes(tc.Name, tc.AMX)
 	if err != nil {
 		return Result{}, fmt.Errorf("%s load: %w", rightName, err)
@@ -41,6 +42,7 @@ func Compare(leftName string, left backend.Backend, rightName string, right back
 		if err := leftVM.RegisterNative(name, fn); err != nil {
 			return Result{}, fmt.Errorf("%s register native %s: %w", leftName, name, err)
 		}
+
 		if err := rightVM.RegisterNative(name, fn); err != nil {
 			return Result{}, fmt.Errorf("%s register native %s: %w", rightName, name, err)
 		}
@@ -50,25 +52,31 @@ func Compare(leftName string, left backend.Backend, rightName string, right back
 	if err != nil {
 		return Result{}, fmt.Errorf("%s metadata: %w", leftName, err)
 	}
+
 	rightMeta, err := metadata(rightVM)
 	if err != nil {
 		return Result{}, fmt.Errorf("%s metadata: %w", rightName, err)
 	}
+
 	var result Result
+
 	result.MetadataDiff = cmp.Diff(leftMeta, rightMeta)
 
 	publics, err := leftVM.Publics()
 	if err != nil {
 		return Result{}, err
 	}
+
 	for _, pub := range publics {
 		args := tc.PublicArgs[pub.Name]
 		leftResult := execPublic(leftVM, pub.Index, pub.Name, args)
+
 		rightResult := execPublic(rightVM, pub.Index, pub.Name, args)
 		if diff := cmp.Diff(leftResult, rightResult); diff != "" {
 			result.PublicDiffs = append(result.PublicDiffs, diff)
 		}
 	}
+
 	return result, nil
 }
 
@@ -82,26 +90,32 @@ func metadata(vm backend.VM) (vmMetadata, error) {
 	if err != nil {
 		return vmMetadata{}, err
 	}
+
 	natives, err := vm.Natives()
 	if err != nil {
 		return vmMetadata{}, err
 	}
+
 	sort.Slice(publics, func(i, j int) bool { return publics[i].Name < publics[j].Name })
 	sort.Strings(natives)
+
 	return vmMetadata{Publics: publics, Natives: natives}, nil
 }
 
 func execPublic(vm backend.VM, index int, name string, args []backend.Cell) PublicResult {
 	value, err := vm.ExecPublic(index, args...)
+
 	out := PublicResult{Name: name, Value: value}
 	if err != nil {
 		out.Error = classifyError(err)
 	}
+
 	return out
 }
 
 func classifyError(err error) string {
 	message := strings.ToLower(err.Error())
+
 	for _, item := range []struct {
 		kind  string
 		terms []string
@@ -120,5 +134,6 @@ func classifyError(err error) string {
 			}
 		}
 	}
+
 	return message
 }

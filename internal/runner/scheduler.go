@@ -2,6 +2,7 @@ package runner
 
 import (
 	"cmp"
+	"errors"
 	"fmt"
 	"slices"
 
@@ -34,6 +35,7 @@ func registerSchedulerNatives(vm backend.VM, scheduler *scheduler) error {
 			return err
 		}
 	}
+
 	return nil
 }
 
@@ -42,15 +44,18 @@ func nativeSchedule(scheduler *scheduler) backend.NativeFunc {
 		if len(params) < 2 || params[0] < 0 {
 			return 0, nil
 		}
+
 		name, err := ctx.ReadString(params[1])
 		if err != nil {
 			return 0, err
 		}
+
 		scheduler.sequence++
 		scheduler.pending = append(scheduler.pending, scheduledCallback{
 			due: scheduler.now + int64(params[0]), sequence: scheduler.sequence, name: name,
 		})
 		scheduler.sort()
+
 		return backend.Cell(scheduler.sequence), nil
 	}
 }
@@ -60,10 +65,12 @@ func nativeAdvanceTime(scheduler *scheduler) backend.NativeFunc {
 		if len(params) < 1 || params[0] < 0 {
 			return 0, nil
 		}
+
 		scheduler.now += int64(params[0])
 		if err := scheduler.runDue(ctx); err != nil {
 			return 0, err
 		}
+
 		return backend.Cell(scheduler.now), nil
 	}
 }
@@ -76,6 +83,7 @@ func nativeRunPending(scheduler *scheduler) backend.NativeFunc {
 				return 0, err
 			}
 		}
+
 		return backend.Cell(scheduler.now), nil
 	}
 }
@@ -89,15 +97,18 @@ func nativeNow(scheduler *scheduler) backend.NativeFunc {
 func (scheduler *scheduler) runDue(ctx backend.NativeContext) error {
 	caller, ok := ctx.(backend.PublicCaller)
 	if !ok {
-		return fmt.Errorf("runtime does not support scheduled callbacks")
+		return errors.New("runtime does not support scheduled callbacks")
 	}
+
 	for len(scheduler.pending) > 0 && scheduler.pending[0].due <= scheduler.now {
 		callback := scheduler.pending[0]
 		scheduler.pending = scheduler.pending[1:]
+
 		if _, err := caller.CallPublic(callback.name); err != nil {
 			return fmt.Errorf("scheduled callback %s: %w", callback.name, err)
 		}
 	}
+
 	return nil
 }
 
@@ -106,6 +117,7 @@ func (scheduler *scheduler) sort() {
 		if a.due != b.due {
 			return cmp.Compare(a.due, b.due)
 		}
+
 		return cmp.Compare(a.sequence, b.sequence)
 	})
 }

@@ -8,15 +8,19 @@ import (
 
 func TestPublics(publics []backend.Public) []backend.Public {
 	var out []backend.Public
+
 	for _, pub := range publics {
 		if !strings.HasPrefix(pub.Name, "test_") {
 			continue
 		}
+
 		if isFixturePublic(pub.Name) {
 			continue
 		}
+
 		out = append(out, pub)
 	}
+
 	return out
 }
 

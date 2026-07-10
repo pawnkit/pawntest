@@ -11,8 +11,10 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type Format string
-type Color string
+type (
+	Format string
+	Color  string
+)
 
 const (
 	FormatPlain Format = "plain"
@@ -62,6 +64,7 @@ func LoadDefaultConfigWithPath() (Config, string, error) {
 			return cfg, path, err
 		}
 	}
+
 	return Config{}, "", nil
 }
 
@@ -76,9 +79,12 @@ func loadConfigIfExists(path string) (Config, bool, error) {
 		if errors.Is(err, os.ErrNotExist) {
 			return Config{}, false, nil
 		}
+
 		return Config{}, false, err
 	}
+
 	var cfg Config
+
 	switch filepath.Ext(path) {
 	case ".yaml", ".yml":
 		if err := yaml.Unmarshal(data, &cfg); err != nil {
@@ -93,9 +99,11 @@ func loadConfigIfExists(path string) (Config, bool, error) {
 			return Config{}, true, err
 		}
 	}
+
 	if err := cfg.validate(); err != nil {
 		return Config{}, true, err
 	}
+
 	return cfg, true, nil
 }
 
@@ -105,15 +113,19 @@ func (cfg Config) validate() error {
 	default:
 		return fmt.Errorf("invalid config format %q", cfg.Format)
 	}
+
 	if cfg.Isolation != "" && cfg.Isolation != "test" && cfg.Isolation != "suite" {
 		return fmt.Errorf("invalid isolation %q", cfg.Isolation)
 	}
+
 	if cfg.CoverageFormat != "" && cfg.CoverageFormat != "lcov" && cfg.CoverageFormat != "json" {
 		return fmt.Errorf("invalid coverage format %q", cfg.CoverageFormat)
 	}
+
 	if cfg.Jobs < 0 || cfg.Repeat < 0 || cfg.MaxInstructions < 0 {
 		return errors.New("jobs, repeat, and max_instructions cannot be negative")
 	}
+
 	return nil
 }
 
@@ -121,68 +133,89 @@ func (a *TestCmd) applyConfig(cfg Config) {
 	if len(a.Paths) == 0 {
 		a.Paths = cfg.Tests
 	}
+
 	if a.PawnCC == "" {
 		a.PawnCC = cfg.PawnCC
 	}
+
 	if len(a.Include) == 0 {
 		a.Include = cfg.Include
 	}
+
 	if a.Format == "" || a.Format == FormatPlain {
 		if cfg.Format != "" {
 			a.Format = cfg.Format
 		}
 	}
+
 	if a.CacheDir == "" {
 		a.CacheDir = cfg.CacheDir
 	}
+
 	if cfg.AllowUnknownNatives {
 		a.AllowUnknownNatives = true
 	}
+
 	if a.Isolation == "test" && cfg.Isolation != "" {
 		a.Isolation = cfg.Isolation
 	}
+
 	if cfg.AllowEmpty {
 		a.AllowEmpty = true
 	}
+
 	if cfg.Verbose {
 		a.Verbose = true
 	}
+
 	if cfg.Quiet {
 		a.Quiet = true
 	}
+
 	if a.Run == "" {
 		a.Run = cfg.Run
 	}
+
 	if a.Tags == "" {
 		a.Tags = cfg.Tags
 	}
+
 	if cfg.Shuffle {
 		a.Shuffle = true
 	}
+
 	if a.Seed == 1 && cfg.Seed != 0 {
 		a.Seed = cfg.Seed
 	}
+
 	if a.Repeat == 1 && cfg.Repeat > 0 {
 		a.Repeat = cfg.Repeat
 	}
+
 	if a.MaxInstructions == 1_000_000 && cfg.MaxInstructions > 0 {
 		a.MaxInstructions = cfg.MaxInstructions
 	}
+
 	if a.Jobs == 1 && cfg.Jobs > 0 {
 		a.Jobs = cfg.Jobs
 	}
+
 	if cfg.UpdateSnapshots {
 		a.UpdateSnapshots = true
 	}
+
 	if cfg.Coverage {
 		a.Coverage = true
 	}
+
 	if a.CoverageOutput == "" {
 		a.CoverageOutput = cfg.CoverageOutput
 	}
+
 	if a.CoverageFormat == "lcov" && cfg.CoverageFormat != "" {
 		a.CoverageFormat = cfg.CoverageFormat
 	}
+
 	if a.FuzzSeed == 1 && cfg.FuzzSeed != 0 {
 		a.FuzzSeed = cfg.FuzzSeed
 	}
@@ -192,9 +225,11 @@ func (d *DoctorCmd) applyConfig(cfg Config) {
 	if d.PawnCC == "" {
 		d.PawnCC = cfg.PawnCC
 	}
+
 	if len(d.Include) == 0 {
 		d.Include = cfg.Include
 	}
+
 	if d.CacheDir == "" {
 		d.CacheDir = cfg.CacheDir
 	}

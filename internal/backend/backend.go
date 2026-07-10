@@ -2,17 +2,21 @@ package backend
 
 import "github.com/pawnkit/goamx/vm"
 
-type Cell = vm.Cell
-type Public = vm.Public
-type NativeFunc = vm.NativeFunc
-type NativeContext = vm.NativeContext
+type (
+	Cell          = vm.Cell
+	Public        = vm.Public
+	NativeFunc    = vm.NativeFunc
+	NativeContext = vm.NativeContext
+)
 
-type PublicCaller = vm.PublicCaller
-type MemorySnapshotter = vm.MemorySnapshotter
-type InstructionLimiter = vm.InstructionLimiter
-type DebugLocator = vm.DebugLocator
-type CoverageLocation = vm.CoverageLocation
-type CoverageInstrumenter = vm.CoverageInstrumenter
+type (
+	PublicCaller         = vm.PublicCaller
+	MemorySnapshotter    = vm.MemorySnapshotter
+	InstructionLimiter   = vm.InstructionLimiter
+	DebugLocator         = vm.DebugLocator
+	CoverageLocation     = vm.CoverageLocation
+	CoverageInstrumenter = vm.CoverageInstrumenter
+)
 
 type VM interface {
 	Publics() ([]Public, error)

@@ -10,5 +10,6 @@ func Key(parts ...[]byte) string {
 	for _, p := range parts {
 		h.Write(p)
 	}
+
 	return hex.EncodeToString(h.Sum(nil))
 }

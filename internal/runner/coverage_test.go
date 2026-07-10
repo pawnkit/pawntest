@@ -16,9 +16,11 @@ func TestCoverageWriters(t *testing.T) {
 	if err := coverage.WriteLCOV(&lcov); err != nil {
 		t.Fatal(err)
 	}
+
 	if err := coverage.WriteJSON(&json); err != nil {
 		t.Fatal(err)
 	}
+
 	for output, want := range map[string]string{
 		lcov.String(): "DA:2,4\nDA:3,0\nLF:2\nLH:1",
 		json.String(): `"count": 4`,

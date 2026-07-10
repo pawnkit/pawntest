@@ -18,12 +18,15 @@ func TestRunnerMocksUnknownNatives(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if len(suite.Results) != 1 {
 		t.Fatalf("len(results) = %d, want 1", len(suite.Results))
 	}
+
 	if suite.Results[0].Status != Pass {
 		t.Fatalf("status = %s, want %s: %s", suite.Results[0].Status, Pass, suite.Results[0].Message)
 	}
+
 	if vm.nativeReturn != 7 {
 		t.Fatalf("mocked native return = %d, want 7", vm.nativeReturn)
 	}
@@ -37,12 +40,15 @@ func TestRunnerErrorsOnUnmockedUnknownNativeByDefault(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if len(suite.Results) != 1 {
 		t.Fatalf("len(results) = %d, want 1", len(suite.Results))
 	}
+
 	if suite.Results[0].Status != Error {
 		t.Fatalf("status = %s, want %s", suite.Results[0].Status, Error)
 	}
+
 	if !strings.Contains(suite.Results[0].Message, "native external_native is not mocked") {
 		t.Fatalf("message = %q, want unmocked native error", suite.Results[0].Message)
 	}
@@ -56,12 +62,15 @@ func TestRunnerAllowsUnmockedUnknownNativeWhenEnabled(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if len(suite.Results) != 1 {
 		t.Fatalf("len(results) = %d, want 1", len(suite.Results))
 	}
+
 	if suite.Results[0].Status != Pass {
 		t.Fatalf("status = %s, want %s: %s", suite.Results[0].Status, Pass, suite.Results[0].Message)
 	}
+
 	if vm.nativeReturn != 0 {
 		t.Fatalf("unmocked native return = %d, want 0", vm.nativeReturn)
 	}
@@ -110,19 +119,24 @@ func (vm *mockVM) ExecPublic(index int, args ...backend.Cell) (backend.Cell, err
 	if _, err := vm.natives["__pawntest_expect_calls"](vm, []backend.Cell{100, 1, 1, 400, 9}); err != nil {
 		return 0, err
 	}
+
 	if _, err := vm.natives["__pawntest_expect_arg"](vm, []backend.Cell{100, 0, 0, 123, 400, 10}); err != nil {
 		return 0, err
 	}
+
 	if !vm.callWithoutMock {
 		if _, err := vm.natives["__pawntest_mock_return"](vm, []backend.Cell{100, 7}); err != nil {
 			return 0, err
 		}
 	}
+
 	ret, err := vm.natives["external_native"](vm, []backend.Cell{123, -1, 700})
 	if err != nil {
 		return 0, err
 	}
+
 	vm.nativeReturn = ret
+
 	return 0, nil
 }
 
@@ -151,6 +165,6 @@ func (vm *mockVM) ReadCell(addr backend.Cell) (backend.Cell, error) {
 	return 0, nil
 }
 
-func (vm *mockVM) WriteCell(addr backend.Cell, value backend.Cell) error {
+func (vm *mockVM) WriteCell(addr, value backend.Cell) error {
 	return nil
 }

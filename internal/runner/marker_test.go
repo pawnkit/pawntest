@@ -9,12 +9,14 @@ import (
 
 func TestRunnerRequiresPawntestIncludeMarker(t *testing.T) {
 	t.Parallel()
+
 	vm := &markerVM{publics: []backend.Public{{Index: 0, Name: "test_body"}}}
 	r := Runner{Backend: markerBackend{vm: vm}}
 
 	if _, err := r.List("plain.amx"); !errors.Is(err, ErrMissingPawntestInclude) {
 		t.Fatalf("List() error = %v, want ErrMissingPawntestInclude", err)
 	}
+
 	if _, err := r.RunFile("plain.amx"); !errors.Is(err, ErrMissingPawntestInclude) {
 		t.Fatalf("RunFile() error = %v, want ErrMissingPawntestInclude", err)
 	}
@@ -76,6 +78,6 @@ func (vm *markerVM) ReadCell(addr backend.Cell) (backend.Cell, error) {
 	return 0, nil
 }
 
-func (vm *markerVM) WriteCell(addr backend.Cell, value backend.Cell) error {
+func (vm *markerVM) WriteCell(addr, value backend.Cell) error {
 	return nil
 }

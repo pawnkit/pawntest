@@ -33,7 +33,9 @@ func JSON(w io.Writer, suite runner.Suite) error {
 			DurationMS: result.Duration.Milliseconds(),
 		})
 	}
+
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
+
 	return enc.Encode(out)
 }

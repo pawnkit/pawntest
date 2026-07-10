@@ -1,6 +1,7 @@
 package runner
 
 import (
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -26,6 +27,7 @@ func registerMockControlNatives(vm backend.VM, mocks *mockState) error {
 			return err
 		}
 	}
+
 	return nil
 }
 
@@ -34,20 +36,24 @@ func registerUnknownNativeMocks(vm backend.VM, mocks *mockState, allowUnmocked b
 	if err != nil {
 		return err
 	}
+
 	for _, name := range natives {
 		if isPawntestNative(name) || isFloatNative(name) {
 			continue
 		}
+
 		if err := vm.RegisterNative(name, mockUnknownNative(name, mocks, allowUnmocked)); err != nil {
 			return err
 		}
 	}
+
 	return nil
 }
 
 func mockUnknownNative(name string, mocks *mockState, allowUnmocked bool) backend.NativeFunc {
 	return func(ctx backend.NativeContext, params []backend.Cell) (backend.Cell, error) {
 		configured := mocks.configured(name)
+
 		value, mocked := mocks.returnValue(name)
 		if !mocked && !configured && !allowUnmocked {
 			return 0, fmt.Errorf(
@@ -58,12 +64,15 @@ func mockUnknownNative(name string, mocks *mockState, allowUnmocked bool) backen
 		}
 
 		mocks.recordCall(name, ctx, params)
+
 		if err := mocks.applyOutputs(name, ctx, params); err != nil {
 			return 0, err
 		}
+
 		if err := mocks.invokeCallback(name, ctx, params); err != nil {
 			return 0, err
 		}
+
 		return value, nil
 	}
 }
@@ -108,10 +117,12 @@ func truncateString(value string, maxLength int) string {
 	if maxLength <= 1 {
 		return ""
 	}
+
 	runes := []rune(value)
 	if len(runes) >= maxLength {
 		runes = runes[:maxLength-1]
 	}
+
 	return string(runes)
 }
 
@@ -131,14 +142,18 @@ func (mocks *mockState) returnValue(name string) (backend.Cell, bool) {
 	if queue := mocks.returnQueues[name]; len(queue) > 0 {
 		value := queue[0]
 		mocks.returnQueues[name] = queue[1:]
+
 		return value, true
 	}
+
 	value, ok := mocks.returns[name]
+
 	return value, ok
 }
 
 func (mocks *mockState) configured(name string) bool {
 	_, hasReturn := mocks.returns[name]
+
 	return hasReturn || len(mocks.returnQueues[name]) > 0 ||
 		len(mocks.outputs[name]) > 0 || len(mocks.stringOutputs[name]) > 0 || mocks.callbacks[name] != ""
 }
@@ -147,14 +162,17 @@ func (mocks *mockState) recordCall(name string, ctx backend.NativeContext, param
 	callIndex := len(mocks.args[name])
 	mocks.calls[name]++
 	mocks.args[name] = append(mocks.args[name], slices.Clone(params))
+
 	mocks.actualOrder = append(mocks.actualOrder, name)
 	for _, expectation := range mocks.expectations {
 		if expectation.kind != "string_arg" || expectation.name != name || expectation.callIndex != callIndex {
 			continue
 		}
+
 		if expectation.argIndex < 0 || expectation.argIndex >= len(params) {
 			continue
 		}
+
 		value, err := ctx.ReadString(params[expectation.argIndex])
 		if err == nil {
 			expectation.actualString = value
@@ -166,6 +184,7 @@ func (mocks *mockState) recordCall(name string, ctx backend.NativeContext, param
 func (mocks *mockState) verify() (string, string, int) {
 	for _, expectation := range mocks.expectations {
 		message := ""
+
 		switch expectation.kind {
 		case "calls":
 			message = mocks.verifyCallCount(expectation)
@@ -174,10 +193,12 @@ func (mocks *mockState) verify() (string, string, int) {
 		case "string_arg":
 			message = mocks.verifyStringArgument(expectation)
 		}
+
 		if message != "" {
 			return message, expectation.file, expectation.line
 		}
 	}
+
 	return mocks.verifyCallOrder()
 }
 
@@ -186,6 +207,7 @@ func (mocks *mockState) verifyCallCount(expectation *mockExpectation) string {
 	if count >= expectation.minimum && count <= expectation.maximum {
 		return ""
 	}
+
 	return fmt.Sprintf(
 		"expected %s to be called %d..%d times, got %d\nrecorded calls: %s",
 		expectation.name,
@@ -210,10 +232,12 @@ func (mocks *mockState) verifyCellArgument(expectation *mockExpectation) string 
 	}
 
 	call := calls[expectation.callIndex]
+
 	actual := call[expectation.argIndex]
 	if actual == expectation.value {
 		return ""
 	}
+
 	return fmt.Sprintf(
 		"expected argument %d of %s call %d to be %d, got %d\nrecorded call: %s",
 		expectation.argIndex,
@@ -229,6 +253,7 @@ func (mocks *mockState) verifyStringArgument(expectation *mockExpectation) strin
 	if expectation.actualStringCaptured && expectation.actualString == expectation.stringValue {
 		return ""
 	}
+
 	return fmt.Sprintf(
 		"expected string argument %d of %s call %d to be %q, got %q\nrecorded calls: %s",
 		expectation.argIndex,
@@ -247,9 +272,11 @@ func (mocks *mockState) verifyCallOrder() (string, string, int) {
 			if index < len(mocks.actualOrder) {
 				actual = mocks.actualOrder[index]
 			}
+
 			return fmt.Sprintf("expected native call %d to be %s, got %s", index, expected.name, actual), expected.file, expected.line
 		}
 	}
+
 	return "", "", 0
 }
 
@@ -258,10 +285,12 @@ func (mocks *mockState) describeCalls(name string) string {
 	if len(calls) == 0 {
 		return "none"
 	}
+
 	parts := make([]string, 0, len(calls))
 	for index, call := range calls {
 		parts = append(parts, fmt.Sprintf("#%d %s", index, describeCall(call)))
 	}
+
 	return strings.Join(parts, "; ")
 }
 
@@ -270,6 +299,7 @@ func describeCall(args []backend.Cell) string {
 	for index, arg := range args {
 		parts[index] = fmt.Sprint(arg)
 	}
+
 	return "(" + strings.Join(parts, ", ") + ")"
 }
 
@@ -281,6 +311,7 @@ func (mocks *mockState) applyOutputs(name string, ctx backend.NativeContext, par
 			}
 		}
 	}
+
 	for index, output := range mocks.stringOutputs[name] {
 		if index >= 0 && index < len(params) {
 			value := truncateString(output.value, output.maxLength)
@@ -289,6 +320,7 @@ func (mocks *mockState) applyOutputs(name string, ctx backend.NativeContext, par
 			}
 		}
 	}
+
 	return nil
 }
 
@@ -297,13 +329,16 @@ func (mocks *mockState) invokeCallback(name string, ctx backend.NativeContext, p
 	if callback == "" {
 		return nil
 	}
+
 	caller, ok := ctx.(backend.PublicCaller)
 	if !ok {
-		return fmt.Errorf("runtime does not support mock callbacks")
+		return errors.New("runtime does not support mock callbacks")
 	}
+
 	if _, err := caller.CallPublic(callback, params...); err != nil {
 		return fmt.Errorf("mock callback %s: %w", callback, err)
 	}
+
 	return nil
 }
 
@@ -312,11 +347,14 @@ func nativeMockReturn(mocks *mockState) backend.NativeFunc {
 		if len(params) < 2 {
 			return 0, nil
 		}
+
 		name, err := ctx.ReadString(params[0])
 		if err != nil {
 			return 0, err
 		}
+
 		mocks.returns[name] = params[1]
+
 		return 1, nil
 	}
 }
@@ -326,11 +364,14 @@ func nativeMockReturnOnce(mocks *mockState) backend.NativeFunc {
 		if len(params) < 2 {
 			return 0, nil
 		}
+
 		name, err := ctx.ReadString(params[0])
 		if err != nil {
 			return 0, err
 		}
+
 		mocks.returnQueues[name] = append(mocks.returnQueues[name], params[1])
+
 		return 1, nil
 	}
 }
@@ -340,14 +381,18 @@ func nativeMockOutput(mocks *mockState) backend.NativeFunc {
 		if len(params) < 3 {
 			return 0, nil
 		}
+
 		name, err := ctx.ReadString(params[0])
 		if err != nil {
 			return 0, err
 		}
+
 		if mocks.outputs[name] == nil {
 			mocks.outputs[name] = map[int]backend.Cell{}
 		}
+
 		mocks.outputs[name][int(params[1])] = params[2]
+
 		return 1, nil
 	}
 }
@@ -357,18 +402,23 @@ func nativeMockOutputString(mocks *mockState) backend.NativeFunc {
 		if len(params) < 4 {
 			return 0, nil
 		}
+
 		name, err := ctx.ReadString(params[0])
 		if err != nil {
 			return 0, err
 		}
+
 		value, err := ctx.ReadString(params[3])
 		if err != nil {
 			return 0, err
 		}
+
 		if mocks.stringOutputs[name] == nil {
 			mocks.stringOutputs[name] = map[int]mockStringOutput{}
 		}
+
 		mocks.stringOutputs[name][int(params[1])] = mockStringOutput{value: value, maxLength: int(params[2])}
+
 		return 1, nil
 	}
 }
@@ -378,15 +428,19 @@ func nativeMockCallback(mocks *mockState) backend.NativeFunc {
 		if len(params) < 2 {
 			return 0, nil
 		}
+
 		name, err := ctx.ReadString(params[0])
 		if err != nil {
 			return 0, err
 		}
+
 		callback, err := ctx.ReadString(params[1])
 		if err != nil {
 			return 0, err
 		}
+
 		mocks.callbacks[name] = callback
+
 		return 1, nil
 	}
 }
@@ -396,14 +450,17 @@ func nativeExpectCalls(mocks *mockState) backend.NativeFunc {
 		if len(params) < 5 {
 			return 0, nil
 		}
+
 		expectation, err := expectationLocation(ctx, params, 0, 3, 4)
 		if err != nil {
 			return 0, err
 		}
+
 		expectation.kind = "calls"
 		expectation.minimum = int(params[1])
 		expectation.maximum = int(params[2])
 		mocks.expectations = append(mocks.expectations, expectation)
+
 		return 1, nil
 	}
 }
@@ -413,15 +470,18 @@ func nativeExpectArg(mocks *mockState) backend.NativeFunc {
 		if len(params) < 6 {
 			return 0, nil
 		}
+
 		expectation, err := expectationLocation(ctx, params, 0, 4, 5)
 		if err != nil {
 			return 0, err
 		}
+
 		expectation.kind = "arg"
 		expectation.callIndex = int(params[1])
 		expectation.argIndex = int(params[2])
 		expectation.value = params[3]
 		mocks.expectations = append(mocks.expectations, expectation)
+
 		return 1, nil
 	}
 }
@@ -431,18 +491,23 @@ func nativeExpectStringArg(mocks *mockState) backend.NativeFunc {
 		if len(params) < 6 {
 			return 0, nil
 		}
+
 		expectation, err := expectationLocation(ctx, params, 0, 4, 5)
 		if err != nil {
 			return 0, err
 		}
+
 		expectation.kind = "string_arg"
 		expectation.callIndex = int(params[1])
 		expectation.argIndex = int(params[2])
+
 		expectation.stringValue, err = ctx.ReadString(params[3])
 		if err != nil {
 			return 0, err
 		}
+
 		mocks.expectations = append(mocks.expectations, expectation)
+
 		return 1, nil
 	}
 }
@@ -452,15 +517,19 @@ func nativeExpectOrder(mocks *mockState) backend.NativeFunc {
 		if len(params) < 3 {
 			return 0, nil
 		}
+
 		name, err := ctx.ReadString(params[0])
 		if err != nil {
 			return 0, err
 		}
+
 		file, err := ctx.ReadString(params[1])
 		if err != nil {
 			return 0, err
 		}
+
 		mocks.expectedOrder = append(mocks.expectedOrder, mockLocation{name: name, file: file, line: int(params[2])})
+
 		return 1, nil
 	}
 }
@@ -470,10 +539,12 @@ func expectationLocation(ctx backend.NativeContext, params []backend.Cell, nameI
 	if err != nil {
 		return nil, err
 	}
+
 	file, err := ctx.ReadString(params[fileIndex])
 	if err != nil {
 		return nil, err
 	}
+
 	return &mockExpectation{name: name, mockLocation: mockLocation{file: file, line: int(params[lineIndex])}}, nil
 }
 
@@ -487,12 +558,15 @@ func nativeMockReset(mocks *mockState) backend.NativeFunc {
 			mocks.outputs = map[string]map[int]backend.Cell{}
 			mocks.stringOutputs = map[string]map[int]mockStringOutput{}
 			mocks.callbacks = map[string]string{}
+
 			return 1, nil
 		}
+
 		name, err := ctx.ReadString(params[0])
 		if err != nil {
 			return 0, err
 		}
+
 		delete(mocks.calls, name)
 		delete(mocks.returns, name)
 		delete(mocks.returnQueues, name)
@@ -500,6 +574,7 @@ func nativeMockReset(mocks *mockState) backend.NativeFunc {
 		delete(mocks.outputs, name)
 		delete(mocks.stringOutputs, name)
 		delete(mocks.callbacks, name)
+
 		return 1, nil
 	}
 }

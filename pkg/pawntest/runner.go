@@ -1,7 +1,7 @@
 package pawntest
 
 import (
-	"fmt"
+	"errors"
 	"path/filepath"
 	"strings"
 
@@ -38,14 +38,17 @@ func (r Runner) List(path string) ([]Public, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	publics, err := r.internal().List(amx)
 	if err != nil {
 		return nil, err
 	}
+
 	out := make([]Public, 0, len(publics))
 	for _, pub := range publics {
 		out = append(out, Public{Index: pub.Index, Name: pub.Name})
 	}
+
 	return out, nil
 }
 
@@ -54,13 +57,16 @@ func (r Runner) RunFile(path string) (Suite, error) {
 	if err != nil {
 		return Suite{}, err
 	}
+
 	internal := r.internal()
 	internal.SourcePath = path
 	internal.UpdateSnapshots = r.UpdateSnapshots
+
 	suite, err := internal.RunFile(amx)
 	if err != nil {
 		return Suite{}, err
 	}
+
 	out := Suite{Results: make([]Result, 0, len(suite.Results))}
 	for _, result := range suite.Results {
 		out.Results = append(out.Results, Result{
@@ -73,6 +79,7 @@ func (r Runner) RunFile(path string) (Suite, error) {
 			Duration: result.Duration.Milliseconds(),
 		})
 	}
+
 	return out, nil
 }
 
@@ -85,10 +92,13 @@ func (r Runner) internal() runner.Runner {
 			for i, param := range params {
 				publicParams[i] = Cell(param)
 			}
+
 			value, err := fn(nativeContext{NativeContext: ctx}, publicParams)
+
 			return backend.Cell(value), err
 		}
 	}
+
 	return runner.Runner{
 		Run:                 r.Run,
 		FailFast:            r.FailFast,
@@ -110,7 +120,7 @@ type NativeContext interface {
 	ReadString(addr Cell) (string, error)
 	WriteString(addr Cell, value string) error
 	ReadCell(addr Cell) (Cell, error)
-	WriteCell(addr Cell, value Cell) error
+	WriteCell(addr, value Cell) error
 	CallPublic(name string, args ...Cell) (Cell, error)
 }
 
@@ -131,20 +141,23 @@ func (ctx nativeContext) ReadCell(addr Cell) (Cell, error) {
 	return Cell(value), err
 }
 
-func (ctx nativeContext) WriteCell(addr Cell, value Cell) error {
+func (ctx nativeContext) WriteCell(addr, value Cell) error {
 	return ctx.NativeContext.WriteCell(backend.Cell(addr), backend.Cell(value))
 }
 
 func (ctx nativeContext) CallPublic(name string, args ...Cell) (Cell, error) {
 	caller, ok := ctx.NativeContext.(backend.PublicCaller)
 	if !ok {
-		return 0, fmt.Errorf("runtime does not support public callbacks")
+		return 0, errors.New("runtime does not support public callbacks")
 	}
+
 	internalArgs := make([]backend.Cell, len(args))
 	for i, arg := range args {
 		internalArgs[i] = backend.Cell(arg)
 	}
+
 	value, err := caller.CallPublic(name, internalArgs...)
+
 	return Cell(value), err
 }
 
@@ -152,23 +165,29 @@ func (r Runner) ensureAMX(path string) (string, error) {
 	if strings.EqualFold(filepath.Ext(path), ".amx") {
 		return path, nil
 	}
+
 	cacheDir := r.CacheDir
 	if cacheDir == "" {
 		cacheDir = cache.Dir()
 	}
+
 	includeDir, err := cache.IncludeDirIn(cacheDir)
 	if err != nil {
 		return "", err
 	}
+
 	outDir, err := cache.AMXDirIn(cacheDir)
 	if err != nil {
 		return "", err
 	}
+
 	includes := append([]string{includeDir}, r.Include...)
+
 	var comp *compiler.Compiler
 	if r.PawnCC != "" {
 		comp = compiler.Bare(r.PawnCC)
 	}
+
 	return compiler.Compile(path, compiler.Options{
 		Compiler:  comp,
 		Includes:  includes,

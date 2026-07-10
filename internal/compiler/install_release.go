@@ -13,6 +13,7 @@ func fetchRelease(ctx context.Context, client *http.Client, url string) (release
 	if err != nil {
 		return releaseInfo{}, err
 	}
+
 	req.Header.Set("Accept", "application/vnd.github+json")
 
 	resp, err := client.Do(req)
@@ -29,6 +30,7 @@ func fetchRelease(ctx context.Context, client *http.Client, url string) (release
 	if err := json.NewDecoder(resp.Body).Decode(&release); err != nil {
 		return releaseInfo{}, err
 	}
+
 	return release, nil
 }
 
@@ -39,27 +41,33 @@ func selectAsset(assets []releaseAsset, goos, goarch string) (releaseAsset, erro
 	}
 
 	var fallback *releaseAsset
+
 	for _, asset := range assets {
 		name := strings.ToLower(asset.Name)
 		if !isCompilerAsset(name) {
 			continue
 		}
+
 		for _, needle := range needles {
 			if !strings.Contains(name, needle) {
 				continue
 			}
+
 			if assetMatchesArch(name, goarch) {
 				return asset, nil
 			}
+
 			if fallback == nil && supportsOpenMPX86Fallback(goarch) {
 				candidate := asset
 				fallback = &candidate
 			}
 		}
 	}
+
 	if fallback != nil {
 		return *fallback, nil
 	}
+
 	return releaseAsset{}, fmt.Errorf("%s: %w", goos, ErrNoCompilerAsset)
 }
 
@@ -86,18 +94,22 @@ func assetMatchesArch(name, goarch string) bool {
 		"386":   {"386", "i386", "x86"},
 		"arm64": {"arm64", "aarch64"},
 	}
+
 	terms := archTerms[goarch]
 	if len(terms) == 0 {
 		return true
 	}
+
 	if !assetNamesAnyKnownArch(name, archTerms) {
 		return supportsOpenMPX86Fallback(goarch)
 	}
+
 	for _, term := range terms {
 		if strings.Contains(name, term) {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -109,6 +121,7 @@ func assetNamesAnyKnownArch(name string, archTerms map[string][]string) bool {
 			}
 		}
 	}
+
 	return false
 }
 

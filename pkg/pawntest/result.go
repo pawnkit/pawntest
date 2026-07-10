@@ -36,5 +36,6 @@ func (s Suite) Failed() bool {
 			return true
 		}
 	}
+
 	return false
 }

@@ -8,6 +8,7 @@ import (
 
 func TestSelectTestsSupportsRegexAndShuffle(t *testing.T) {
 	t.Parallel()
+
 	publics := []backend.Public{
 		{Index: 1, Name: "test_alpha"},
 		{Index: 2, Name: "test_beta"},
@@ -19,9 +20,11 @@ func TestSelectTestsSupportsRegexAndShuffle(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if len(got) != 2 {
 		t.Fatalf("selected %d tests, want 2", len(got))
 	}
+
 	runs := runner.testRuns(got)
 	if len(runs) != 4 || runs[0].name != got[0].Name+" [attempt 1/2]" || runs[2].name != got[0].Name+" [attempt 2/2]" {
 		t.Fatalf("unexpected repeated runs: %#v", runs)
@@ -30,6 +33,7 @@ func TestSelectTestsSupportsRegexAndShuffle(t *testing.T) {
 
 func TestSelectTestsRejectsInvalidRegex(t *testing.T) {
 	t.Parallel()
+
 	_, err := (Runner{Run: "["}).selectTests(nil)
 	if err == nil {
 		t.Fatal("expected invalid regex error")

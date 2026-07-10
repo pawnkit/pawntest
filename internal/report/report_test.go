@@ -16,10 +16,12 @@ func TestPlainSummaryAndMessages(t *testing.T) {
 		{Name: "test_skip", Status: runner.Skip, Message: "later"},
 		{Name: "test_error", Status: runner.Error, Message: "runtime"},
 	}}
+
 	var out bytes.Buffer
 	if err := Plain(&out, suite); err != nil {
 		t.Fatal(err)
 	}
+
 	got := out.String()
 	for _, want := range []string{
 		"PASS  test_pass",
@@ -40,10 +42,12 @@ func TestPlainColorizesStatusesAndSummary(t *testing.T) {
 		{Name: "test_fail", Status: runner.Fail, Message: "bad math", File: "math.pwn", Line: 12},
 		{Name: "test_skip", Status: runner.Skip, Message: "later"},
 	}}
+
 	var out bytes.Buffer
 	if err := PlainWithOptions(&out, suite, PlainOptions{Color: true}); err != nil {
 		t.Fatal(err)
 	}
+
 	for _, want := range []string{
 		"\x1b[32mPASS \x1b[0m test_pass",
 		"\x1b[31mFAIL \x1b[0m test_fail",
@@ -62,10 +66,12 @@ func TestPlainGroupsSourcesAndPrintsRerunCommand(t *testing.T) {
 		{Name: "test_ok", Source: "tests/math.test.pwn", File: "tests/math.test.pwn", Status: runner.Pass},
 		{Name: "test_addition", Source: "tests/math.test.pwn", File: "tests/math.test.pwn", Line: 12, Status: runner.Fail, Message: "expected: 5\nactual:   4"},
 	}}
+
 	var out bytes.Buffer
 	if err := Plain(&out, suite); err != nil {
 		t.Fatal(err)
 	}
+
 	for _, want := range []string{
 		"tests/math.test.pwn\n  PASS  test_ok",
 		"      expected: 5\n        actual:   4",
@@ -85,16 +91,20 @@ func TestPlainQuietAndVerboseModes(t *testing.T) {
 		{Name: "test_skip", Source: "math.test.pwn", Status: runner.Skip, Message: "later"},
 		{Name: "test_fail", Source: "math.test.pwn", File: "math.test.pwn", Line: 4, Status: runner.Fail, Message: "bad", Duration: 3 * time.Millisecond},
 	}}
+
 	var quiet, verbose bytes.Buffer
 	if err := PlainWithOptions(&quiet, suite, PlainOptions{Quiet: true}); err != nil {
 		t.Fatal(err)
 	}
+
 	if strings.Contains(quiet.String(), "test_ok") || strings.Contains(quiet.String(), "test_skip") || !strings.Contains(quiet.String(), "test_fail") {
 		t.Fatalf("unexpected quiet output:\n%s", quiet.String())
 	}
+
 	if err := PlainWithOptions(&verbose, suite, PlainOptions{Verbose: true}); err != nil {
 		t.Fatal(err)
 	}
+
 	if !strings.Contains(verbose.String(), "test_ok  2ms") || !strings.Contains(verbose.String(), "test_fail  3ms") {
 		t.Fatalf("verbose output missing durations:\n%s", verbose.String())
 	}
@@ -102,10 +112,12 @@ func TestPlainQuietAndVerboseModes(t *testing.T) {
 
 func TestTAPSkipDirective(t *testing.T) {
 	suite := runner.Suite{Results: []runner.Result{{Name: "test_skip", Status: runner.Skip, Message: "later"}}}
+
 	var out bytes.Buffer
 	if err := TAP(&out, suite); err != nil {
 		t.Fatal(err)
 	}
+
 	if got, want := out.String(), "ok 1 - test_skip # SKIP later"; !strings.Contains(got, want) {
 		t.Fatalf("TAP output missing %q:\n%s", want, got)
 	}
@@ -113,10 +125,12 @@ func TestTAPSkipDirective(t *testing.T) {
 
 func TestJSONUsesDurationMSAndSummary(t *testing.T) {
 	suite := runner.Suite{Results: []runner.Result{{Name: "test_pass", Status: runner.Pass, Duration: 2 * time.Millisecond}}}
+
 	var out bytes.Buffer
 	if err := JSON(&out, suite); err != nil {
 		t.Fatal(err)
 	}
+
 	for _, want := range []string{`"summary"`, `"total": 1`, `"duration_ms": 2`} {
 		if !strings.Contains(out.String(), want) {
 			t.Fatalf("JSON output missing %q:\n%s", want, out.String())
@@ -126,10 +140,12 @@ func TestJSONUsesDurationMSAndSummary(t *testing.T) {
 
 func TestJUnitUsesSecondsDuration(t *testing.T) {
 	suite := runner.Suite{Results: []runner.Result{{Name: "test_pass", Status: runner.Pass, Duration: 1500 * time.Millisecond}}}
+
 	var out bytes.Buffer
 	if err := JUnit(&out, suite); err != nil {
 		t.Fatal(err)
 	}
+
 	if !strings.Contains(out.String(), `time="1.500"`) {
 		t.Fatalf("JUnit output missing seconds duration:\n%s", out.String())
 	}
@@ -143,6 +159,7 @@ func TestExpectedFailureStatusesAcrossReports(t *testing.T) {
 	if !suite.Failed() {
 		t.Fatal("xpass must fail the suite")
 	}
+
 	if summary := suite.Summary(); summary.XFailed != 1 || summary.XPassed != 1 {
 		t.Fatalf("unexpected summary: %#v", summary)
 	}
@@ -151,12 +168,15 @@ func TestExpectedFailureStatusesAcrossReports(t *testing.T) {
 	if err := Plain(&plain, suite); err != nil {
 		t.Fatal(err)
 	}
+
 	if err := TAP(&tap, suite); err != nil {
 		t.Fatal(err)
 	}
+
 	if err := JUnit(&junit, suite); err != nil {
 		t.Fatal(err)
 	}
+
 	for output, want := range map[string]string{
 		plain.String(): "1 xfailed, 1 xpassed",
 		tap.String():   "ok 1 - test_known # TODO expected failure",

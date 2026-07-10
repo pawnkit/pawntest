@@ -8,14 +8,17 @@ import (
 
 func TestPlayerModelHandlesZeroPlayersWithoutMockConfiguration(t *testing.T) {
 	vm := &mockVM{natives: map[string]backend.NativeFunc{}, strings: map[backend.Cell]string{}}
+
 	state := newOpenMPState()
 	if err := registerOpenMPPlayerNatives(vm, &nativeState{status: Pass}, state, newMockState(), false); err != nil {
 		t.Fatal(err)
 	}
+
 	connected, err := vm.natives["IsPlayerConnected"](vm, []backend.Cell{0})
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if connected != 0 {
 		t.Fatalf("IsPlayerConnected(0) = %d, want 0", connected)
 	}
@@ -26,6 +29,7 @@ func TestPlayerAssertionRejectsMalformedArguments(t *testing.T) {
 	if err := registerOpenMPPlayerNatives(vm, &nativeState{status: Pass}, newOpenMPState(), newMockState(), false); err != nil {
 		t.Fatal(err)
 	}
+
 	if _, err := vm.natives["__pt_player_money"](vm, nil); err == nil {
 		t.Fatal("expected malformed player assertion error")
 	}
@@ -33,11 +37,22 @@ func TestPlayerAssertionRejectsMalformedArguments(t *testing.T) {
 
 func TestScenarioRegistryCloneIsolatesPlayerState(t *testing.T) {
 	registry := newScenarioRegistry()
-	original := registry.modules[0].(*openMPState)
+
+	original, ok := registry.modules[0].(*openMPState)
+	if !ok {
+		t.Fatal("scenario registry did not contain player state")
+	}
+
 	original.players[0] = &testPlayer{name: "Alice", connected: true, messages: []string{"hello"}}
 
 	clone := registry.Clone()
-	clonedPlayer := clone.modules[0].(*openMPState).players[0]
+
+	clonedState, ok := clone.modules[0].(*openMPState)
+	if !ok {
+		t.Fatal("cloned scenario registry did not contain player state")
+	}
+
+	clonedPlayer := clonedState.players[0]
 	clonedPlayer.name = "Bob"
 	clonedPlayer.messages[0] = "changed"
 

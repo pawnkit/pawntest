@@ -38,6 +38,7 @@ func JUnit(w io.Writer, suite runner.Suite) error {
 	for _, r := range suite.Results {
 		c := junitCase{Name: r.Name, Time: fmt.Sprintf("%.3f", r.Duration.Seconds())}
 		switch r.Status {
+		case runner.Pass:
 		case runner.Fail:
 			js.Failures++
 			c.Failure = &junitFailure{Message: r.Message}
@@ -54,8 +55,11 @@ func JUnit(w io.Writer, suite runner.Suite) error {
 			js.Failures++
 			c.Failure = &junitFailure{Message: r.Message}
 		}
+
 		js.Cases = append(js.Cases, c)
 	}
+
 	_, _ = io.WriteString(w, xml.Header)
+
 	return xml.NewEncoder(w).Encode(js)
 }

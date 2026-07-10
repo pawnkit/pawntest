@@ -15,12 +15,15 @@ func TestRunnerFailFastStopsAfterError(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if len(suite.Results) != 1 {
 		t.Fatalf("len(results) = %d, want 1", len(suite.Results))
 	}
+
 	if suite.Results[0].Status != Error {
 		t.Fatalf("status = %s, want %s", suite.Results[0].Status, Error)
 	}
+
 	if vm.executed != 1 {
 		t.Fatalf("executed tests = %d, want 1", vm.executed)
 	}
@@ -57,6 +60,7 @@ func (vm *failFastVM) Publics() ([]backend.Public, error) {
 	if vm.publics != nil {
 		return vm.publics, nil
 	}
+
 	return []backend.Public{
 		{Index: 0, Name: markerPublic},
 		{Index: 1, Name: "test_errors"},
@@ -76,9 +80,11 @@ func (vm *failFastVM) ExecPublic(index int, args ...backend.Cell) (backend.Cell,
 	if index != 0 {
 		vm.executed++
 	}
+
 	if index == 1 {
 		return 0, errors.New("boom")
 	}
+
 	return 0, nil
 }
 
@@ -106,6 +112,6 @@ func (vm *failFastVM) ReadCell(addr backend.Cell) (backend.Cell, error) {
 	return 0, nil
 }
 
-func (vm *failFastVM) WriteCell(addr backend.Cell, value backend.Cell) error {
+func (vm *failFastVM) WriteCell(addr, value backend.Cell) error {
 	return nil
 }

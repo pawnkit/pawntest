@@ -10,10 +10,12 @@ import (
 
 func TestCompileUsesCacheAndPassesArgs(t *testing.T) {
 	dir := t.TempDir()
+
 	src := filepath.Join(dir, "math.test.pwn")
 	if err := os.WriteFile(src, []byte("public test_addition() {}\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
+
 	log := filepath.Join(dir, "calls.log")
 	pawncc := fakePawnCC(t, dir, log)
 
@@ -27,6 +29,7 @@ func TestCompileUsesCacheAndPassesArgs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if filepath.Base(out) == "math_test.amx" {
 		t.Fatalf("Compile() output = %q, want cache-keyed filename", out)
 	}
@@ -41,13 +44,16 @@ func TestCompileUsesCacheAndPassesArgs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if second != out {
 		t.Fatalf("second Compile() = %q, want %q", second, out)
 	}
+
 	calls, err := os.ReadFile(log)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if got := normalizeNewlines(string(calls)); got != "call\n" {
 		t.Fatalf("fake pawncc calls = %q, want one call", got)
 	}
@@ -60,13 +66,16 @@ func TestCompileUsesCacheAndPassesArgs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if forced == "" {
 		t.Fatal("forced Compile() returned empty output")
 	}
+
 	calls, err = os.ReadFile(log)
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if got := normalizeNewlines(string(calls)); got != "call\ncall\n" {
 		t.Fatalf("fake pawncc calls after forced compile = %q, want two calls", got)
 	}
@@ -78,10 +87,12 @@ func TestBuildArgsDisablesCompactOutputAndEnablesDebugInfo(t *testing.T) {
 		Defines:   []string{"TESTING"},
 		ExtraArgs: []string{"-O0"},
 	})
+
 	want := []string{"-C-", "-d2", "-oout.amx", "-iinclude", "-DTESTING", "-O0", "math.test.pwn"}
 	if len(got) != len(want) {
 		t.Fatalf("len(buildArgs()) = %d, want %d: %#v", len(got), len(want), got)
 	}
+
 	for i := range want {
 		if got[i] != want[i] {
 			t.Fatalf("buildArgs()[%d] = %q, want %q (all args: %#v)", i, got[i], want[i], got)
@@ -92,14 +103,18 @@ func TestBuildArgsDisablesCompactOutputAndEnablesDebugInfo(t *testing.T) {
 func TestCompileKeyIncludesUserIncludeContent(t *testing.T) {
 	dir := t.TempDir()
 	src := filepath.Join(dir, "math.test.pwn")
+
 	incDir := filepath.Join(dir, "include")
 	if err := os.Mkdir(incDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
+
 	inc := filepath.Join(incDir, "helper.inc")
+
 	if err := os.WriteFile(src, []byte("#include <helper>\npublic test_addition() {}\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
+
 	if err := os.WriteFile(inc, []byte("#define VALUE 1\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -108,13 +123,16 @@ func TestCompileKeyIncludesUserIncludeContent(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if err := os.WriteFile(inc, []byte("#define VALUE 2\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
+
 	second, err := compileKey(src, "pawncc", Options{Includes: []string{incDir}})
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if first == second {
 		t.Fatal("compile key did not change after included file content changed")
 	}
@@ -122,10 +140,12 @@ func TestCompileKeyIncludesUserIncludeContent(t *testing.T) {
 
 func TestParseIncludes(t *testing.T) {
 	got := parseIncludes("#include <pawntest>\n#include \"local.inc\"\n#include <nested/path>\n")
+
 	want := []string{"pawntest", "local.inc", "nested/path"}
 	if len(got) != len(want) {
 		t.Fatalf("parseIncludes() = %#v, want %#v", got, want)
 	}
+
 	for i := range want {
 		if got[i] != want[i] {
 			t.Fatalf("parseIncludes()[%d] = %q, want %q", i, got[i], want[i])
@@ -135,6 +155,7 @@ func TestParseIncludes(t *testing.T) {
 
 func fakePawnCC(t *testing.T, dir, log string) string {
 	t.Helper()
+
 	path := filepath.Join(dir, "pawncc")
 	if runtime.GOOS == "windows" {
 		path += ".bat"
@@ -149,22 +170,29 @@ func fakePawnCC(t *testing.T, dir, log string) string {
 		script += "goto loop\r\n"
 		script += ":done\r\n"
 		script += "for %%I in (\"!out!\") do if not exist \"%%~dpI\" mkdir \"%%~dpI\"\r\n"
+
 		script += "> \"!out!\" echo amx\r\n"
 		if err := os.WriteFile(path, []byte(script), 0o755); err != nil {
 			t.Fatal(err)
 		}
+
 		t.Setenv("PAWNTEST_CALL_LOG", log)
+
 		return path
 	}
+
 	script := "#!/bin/sh\n"
 	script += "printf 'call\\n' >> \"$PAWNTEST_CALL_LOG\"\n"
 	script += "for arg in \"$@\"; do case \"$arg\" in -o*) out=${arg#-o};; esac; done\n"
 	script += "mkdir -p \"$(dirname \"$out\")\"\n"
+
 	script += "printf 'amx' > \"$out\"\n"
 	if err := os.WriteFile(path, []byte(script), 0o755); err != nil {
 		t.Fatal(err)
 	}
+
 	t.Setenv("PAWNTEST_CALL_LOG", log)
+
 	return path
 }
 

@@ -16,20 +16,26 @@ func registerNamedFixtureNative(vm backend.VM, state *nativeState, fixtures *nam
 		if len(params) < 4 {
 			return 0, nil
 		}
+
 		setup := readStringParam(ctx, params, 0)
 		teardown := readStringParam(ctx, params, 1)
+
 		caller, ok := ctx.(backend.PublicCaller)
 		if !ok {
-			return 0, fmt.Errorf("runtime does not support named fixtures")
+			return 0, errors.New("runtime does not support named fixtures")
 		}
+
 		if _, err := caller.CallPublic(setup); err != nil {
 			setFailure(state, params, 2, fmt.Sprintf("fixture %s failed: %v", setup, err), ctx)
 			return 0, nil
 		}
+
 		if state.status != Pass {
 			return 0, nil
 		}
+
 		fixtures.teardowns = append(fixtures.teardowns, teardown)
+
 		return 1, nil
 	})
 }
@@ -37,16 +43,20 @@ func registerNamedFixtureNative(vm backend.VM, state *nativeState, fixtures *nam
 func (fixtures *namedFixtureState) runTeardowns(vm backend.VM) error {
 	caller, ok := vm.(backend.PublicCaller)
 	if !ok && len(fixtures.teardowns) > 0 {
-		return fmt.Errorf("runtime does not support named fixture teardown")
+		return errors.New("runtime does not support named fixture teardown")
 	}
+
 	var failures []error
+
 	for len(fixtures.teardowns) > 0 {
 		index := len(fixtures.teardowns) - 1
 		name := fixtures.teardowns[index]
 		fixtures.teardowns = fixtures.teardowns[:index]
+
 		if _, err := caller.CallPublic(name); err != nil {
 			failures = append(failures, fmt.Errorf("fixture %s failed: %w", name, err))
 		}
 	}
+
 	return errors.Join(failures...)
 }

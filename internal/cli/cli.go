@@ -46,6 +46,7 @@ func cliColor(w io.Writer, s, code string) string {
 	if !isTerminal(w) {
 		return s
 	}
+
 	return code + s + ansiReset
 }
 
@@ -53,14 +54,18 @@ func isTerminal(w io.Writer) bool {
 	if os.Getenv("NO_COLOR") != "" || os.Getenv("TERM") == "dumb" {
 		return false
 	}
+
 	if force := os.Getenv("CLICOLOR_FORCE"); force != "" && force != "0" {
 		return true
 	}
+
 	f, ok := w.(*os.File)
 	if !ok {
 		return false
 	}
+
 	info, err := f.Stat()
+
 	return err == nil && info.Mode()&os.ModeCharDevice != 0
 }
 
@@ -121,6 +126,7 @@ type versionFlag bool
 func (versionFlag) BeforeApply(app *kong.Kong, vars kong.Vars) error {
 	fmt.Println(vars["version"])
 	app.Exit(0)
+
 	return nil
 }
 
@@ -134,6 +140,7 @@ var errTestsFailed = errors.New("tests failed")
 
 func Run(args []string, stdout, stderr io.Writer) int {
 	var cli CLI
+
 	parser, err := kong.New(&cli,
 		kong.Name("pawntest"),
 		kong.Description("Pawn test runner for SA-MP/open.mp-style projects."),
@@ -143,27 +150,35 @@ func Run(args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintln(stderr, err)
 		return ExitInternal
 	}
+
 	parsed, err := parser.Parse(args)
 	if err != nil {
 		fmt.Fprintln(stderr, cliColor(stderr, err.Error(), ansiRed))
 		return ExitUsage
 	}
+
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
+
 	var execErr error
+
 	switch parsed.Command() {
 	case "doctor":
 		execErr = cli.Doctor.execute(ctx, stdout)
 	default:
 		execErr = cli.Test.execute(ctx, stdout, stderr)
 	}
+
 	if execErr != nil {
 		if errors.Is(execErr, errTestsFailed) {
 			return ExitFailed
 		}
+
 		fmt.Fprintln(stderr, cliColor(stderr, "error: "+execErr.Error(), ansiRed))
+
 		return ExitUsage
 	}
+
 	return ExitOK
 }
 
@@ -171,9 +186,11 @@ func (a TestCmd) compilerOption() *compiler.Compiler {
 	if a.compilerCache != nil {
 		return a.compilerCache
 	}
+
 	if a.PawnCC != "" {
 		return compiler.Bare(a.PawnCC)
 	}
+
 	return nil
 }
 
@@ -181,46 +198,60 @@ func (a TestCmd) execute(ctx context.Context, stdout, stderr io.Writer) error {
 	if a.Watch {
 		return a.watch(ctx, stdout, stderr)
 	}
+
 	cfg, _, err := LoadDefaultConfigWithPath()
 	if err != nil {
 		return err
 	}
+
 	a.applyConfig(cfg)
+
 	if err := a.validate(); err != nil {
 		return err
 	}
+
 	files, err := a.discoverFiles()
 	if err != nil {
 		return err
 	}
+
 	if err := a.ensureCompilerAvailable(ctx, files, stderr); err != nil {
 		return err
 	}
+
 	coverage := a.newCoverage()
+
 	r := a.newRunner(coverage)
 	if a.List {
 		return a.listTests(ctx, stdout, files, r)
 	}
+
 	runStarted := time.Now()
+
 	suites, err := a.runFiles(ctx, files, r)
 	if err != nil {
 		return err
 	}
+
 	all := aggregateSuites(suites, time.Since(runStarted))
 	if len(all.Results) == 0 && !a.AllowEmpty {
 		return errors.New("no tests found")
 	}
+
 	if err := a.writeReportOutput(stdout, all); err != nil {
 		return err
 	}
+
 	if coverage != nil {
 		if err := a.writeCoverage(coverage); err != nil {
 			return err
 		}
 	}
+
 	if all.Failed() {
 		return errTestsFailed
 	}
+
 	return nil
 }
 
@@ -228,6 +259,7 @@ func (a TestCmd) validate() error {
 	if a.Verbose && a.Quiet {
 		return errors.New("verbose and quiet output cannot be enabled together")
 	}
+
 	return nil
 }
 
@@ -236,9 +268,11 @@ func (a TestCmd) discoverFiles() ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	if len(files) == 0 && !a.AllowEmpty {
 		return nil, errors.New("no test files found")
 	}
+
 	return files, nil
 }
 
@@ -246,6 +280,7 @@ func (a TestCmd) newCoverage() *runner.Coverage {
 	if !a.Coverage {
 		return nil
 	}
+
 	return runner.NewCoverage()
 }
 
@@ -268,16 +303,20 @@ func (a TestCmd) newRunner(coverage *runner.Coverage) runner.Runner {
 
 func (a TestCmd) listTests(ctx context.Context, stdout io.Writer, files []string, r runner.Runner) error {
 	var names []string
+
 	for _, file := range files {
 		fileNames, err := a.listFileTests(ctx, file, r)
 		if err != nil {
 			return err
 		}
+
 		names = append(names, fileNames...)
 	}
+
 	if len(names) == 0 && !a.AllowEmpty {
 		return errors.New("no tests found")
 	}
+
 	return report.List(stdout, names)
 }
 
@@ -286,21 +325,26 @@ func (a TestCmd) listFileTests(ctx context.Context, file string, r runner.Runner
 	if err != nil {
 		return nil, err
 	}
+
 	if len(expectations) > 0 {
 		return []string{diagnosticTestName(file)}, nil
 	}
+
 	amx, err := a.ensureAMX(ctx, file)
 	if err != nil {
 		return nil, err
 	}
+
 	tests, err := r.List(amx)
 	if err != nil {
 		return nil, err
 	}
+
 	names := make([]string, 0, len(tests))
 	for _, test := range tests {
 		names = append(names, test.Name)
 	}
+
 	return names, nil
 }
 
@@ -309,6 +353,7 @@ func aggregateSuites(suites []runner.Suite, duration time.Duration) runner.Suite
 	for _, suite := range suites {
 		all.Results = append(all.Results, suite.Results...)
 	}
+
 	return all
 }
 
@@ -316,11 +361,13 @@ func (a TestCmd) writeReportOutput(stdout io.Writer, suite runner.Suite) error {
 	if a.Output == "" {
 		return a.writeReport(stdout, suite)
 	}
+
 	f, err := os.Create(a.Output)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
+
 	return a.writeReport(f, suite)
 }
 
@@ -329,26 +376,35 @@ func (a TestCmd) watch(ctx context.Context, stdout, stderr io.Writer) error {
 	if err != nil {
 		return err
 	}
+
 	a.applyConfig(cfg)
+
 	a.Watch = false
 	if len(a.Paths) == 0 {
 		a.Paths = []string{"."}
 	}
+
 	paths := watcher.Paths(a.discoveryPaths(), a.Include)
 	snapshot := watcher.Files(paths)
+
 	for {
 		if err := a.execute(ctx, stdout, stderr); err != nil {
 			fmt.Fprintln(stderr, err)
 		}
+
 		fmt.Fprintln(stdout, cliColor(stdout, "watching for changes...", ansiDim))
+
 		next, err := watcher.Wait(ctx, paths, snapshot, a.WatchInterval)
 		if err != nil {
 			if errors.Is(err, context.Canceled) {
 				return nil
 			}
+
 			return err
 		}
+
 		snapshot = next
+
 		fmt.Fprintln(stdout, cliColor(stdout, "\nchange detected; rerunning tests", ansiYellow))
 	}
 }
@@ -358,14 +414,17 @@ func (a TestCmd) writeCoverage(coverage *runner.Coverage) error {
 	if path == "" {
 		path = "coverage." + a.CoverageFormat
 	}
+
 	file, err := os.Create(path)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
+
 	if a.CoverageFormat == "json" {
 		return coverage.WriteJSON(file)
 	}
+
 	return coverage.WriteLCOV(file)
 }
 
@@ -374,6 +433,7 @@ func (a TestCmd) runFiles(ctx context.Context, files []string, r runner.Runner) 
 	if jobs < 1 {
 		return nil, errors.New("jobs must be at least 1")
 	}
+
 	if a.FailFast {
 		suites := make([]runner.Suite, 0, len(files))
 		for _, file := range files {
@@ -381,46 +441,57 @@ func (a TestCmd) runFiles(ctx context.Context, files []string, r runner.Runner) 
 			if err != nil {
 				return nil, err
 			}
+
 			suites = append(suites, suite)
 			if suite.Failed() {
 				break
 			}
 		}
+
 		return suites, nil
 	}
+
 	type fileResult struct {
 		suite runner.Suite
 		err   error
 	}
+
 	results := make([]fileResult, len(files))
 	g, ctx := errgroup.WithContext(ctx)
 	g.SetLimit(jobs)
+
 	for i, file := range files {
 		g.Go(func() error {
 			results[i].suite, results[i].err = a.runFile(ctx, file, r)
 			return nil
 		})
 	}
+
 	if err := g.Wait(); err != nil {
 		return nil, err
 	}
+
 	suites := make([]runner.Suite, 0, len(results))
 	for _, result := range results {
 		if result.err != nil {
 			return nil, result.err
 		}
+
 		suites = append(suites, result.suite)
 	}
+
 	return suites, nil
 }
 
 func (a TestCmd) runFile(ctx context.Context, file string, r runner.Runner) (runner.Suite, error) {
 	expectations, err := compiler.DiagnosticExpectations(file)
+
 	var suite runner.Suite
 	if err == nil && len(expectations) > 0 {
 		suite, err = a.runDiagnosticTest(ctx, file, expectations)
 	} else if err == nil {
 		var amx string
+
 		amx, err = a.ensureAMX(ctx, file)
 		if err == nil {
 			r.SourcePath = file
@@ -428,12 +499,15 @@ func (a TestCmd) runFile(ctx context.Context, file string, r runner.Runner) (run
 			suite, err = r.RunFile(amx)
 		}
 	}
+
 	if a.AllowEmpty && errors.Is(err, runner.ErrNoTestsFound) {
 		err = nil
 	}
+
 	for i := range suite.Results {
 		suite.Results[i].Source = file
 	}
+
 	return suite, err
 }
 
@@ -442,14 +516,17 @@ func (a TestCmd) runDiagnosticTest(ctx context.Context, path string, expectation
 	if err != nil {
 		return runner.Suite{}, err
 	}
+
 	result, err := compiler.CheckDiagnostics(path, opts, expectations)
 	if err != nil {
 		return runner.Suite{}, err
 	}
+
 	status := runner.Fail
 	if result.Passed {
 		status = runner.Pass
 	}
+
 	return runner.Suite{Results: []runner.Result{{
 		Name: diagnosticTestName(path), File: path, Source: path, Status: status, Message: result.Message,
 	}}}, nil
@@ -463,33 +540,44 @@ func (a *TestCmd) ensureCompilerAvailable(ctx context.Context, files []string, s
 	if a.PawnCC != "" || !needsCompiler(files) {
 		return nil
 	}
+
 	if _, err := exec.LookPath("pawncc"); err == nil {
 		return nil
 	}
+
 	cacheDir := a.CacheDir
 	if cacheDir == "" {
 		cacheDir = cache.Dir()
 	}
+
 	if c, ok := compiler.FindCachedCompiler(cacheDir); ok {
 		a.PawnCC = c.Path
 		a.compilerCache = c
+
 		return nil
 	}
+
 	if !a.resolveCanPrompt() {
 		return compiler.ErrPawnCCNotFound
 	}
+
 	fmt.Fprintf(stderr, "pawncc was not found in PATH. Download the openmultiplayer compiler from GitHub releases to %s? [y/N] ", filepath.Join(cacheDir, "tools", "openmp-compiler"))
+
 	if !a.resolveConfirm() {
 		return compiler.ErrPawnCCNotFound
 	}
+
 	fmt.Fprintln(stderr, cliColor(stderr, "Downloading openmultiplayer compiler...", ansiCyan))
+
 	c, err := a.resolveInstall(ctx, cacheDir)
 	if err != nil {
 		return err
 	}
+
 	a.PawnCC = c.Path
 	a.compilerCache = c
 	fmt.Fprintln(stderr, cliColor(stderr, "Using downloaded compiler: "+c.Path, ansiGreen))
+
 	return nil
 }
 
@@ -499,6 +587,7 @@ func needsCompiler(files []string) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -506,6 +595,7 @@ func (a *TestCmd) resolveStdin() *os.File {
 	if a.stdinSrc != nil {
 		return a.stdinSrc
 	}
+
 	return os.Stdin
 }
 
@@ -513,6 +603,7 @@ func (a *TestCmd) resolveCanPrompt() bool {
 	if a.canPromptFn != nil {
 		return a.canPromptFn()
 	}
+
 	return canPrompt(a.resolveStdin())
 }
 
@@ -520,6 +611,7 @@ func (a *TestCmd) resolveConfirm() bool {
 	if a.confirmFn != nil {
 		return a.confirmFn()
 	}
+
 	return confirmDownload(a.resolveStdin())
 }
 
@@ -527,6 +619,7 @@ func (a *TestCmd) resolveInstall(ctx context.Context, dir string) (*compiler.Com
 	if a.installFn != nil {
 		return a.installFn(ctx, dir)
 	}
+
 	return compiler.InstallOpenMPCompiler(ctx, dir)
 }
 
@@ -540,6 +633,7 @@ func confirmDownload(r io.Reader) bool {
 	if err != nil {
 		return false
 	}
+
 	switch strings.ToLower(strings.TrimSpace(line)) {
 	case "y", "yes":
 		return true
@@ -552,28 +646,35 @@ func (a TestCmd) ensureAMX(ctx context.Context, path string) (string, error) {
 	if filepath.Ext(path) == ".amx" {
 		return path, nil
 	}
+
 	opts, err := a.compilerOptions(ctx, path)
 	if err != nil {
 		return "", err
 	}
+
 	return compiler.CompileContext(ctx, path, opts)
 }
 
 func (a TestCmd) compilerOptions(ctx context.Context, path string) (compiler.Options, error) {
 	_ = ctx
+
 	cacheDir := a.CacheDir
 	if cacheDir == "" {
 		cacheDir = cache.Dir()
 	}
+
 	includeDir, err := cache.IncludeDirIn(cacheDir)
 	if err != nil {
 		return compiler.Options{}, err
 	}
+
 	includes := append([]string{includeDir}, a.Include...)
+
 	outDir, err := cache.AMXDirIn(cacheDir)
 	if err != nil {
 		return compiler.Options{}, err
 	}
+
 	return compiler.Options{
 		Compiler:  a.compilerOption(),
 		Includes:  includes,
@@ -589,23 +690,28 @@ func (a TestCmd) discoveryPaths() []string {
 	if !a.Recursive {
 		return a.Paths
 	}
+
 	paths := a.Paths
 	if len(paths) == 0 {
 		paths = []string{"."}
 	}
+
 	out := make([]string, 0, len(paths))
 	for _, path := range paths {
 		if filepath.Ext(path) == "" && !filepath.IsAbs(path) {
 			out = append(out, path+"/...")
 			continue
 		}
+
 		info, err := os.Stat(path)
 		if err == nil && info.IsDir() {
 			out = append(out, path+"/...")
 			continue
 		}
+
 		out = append(out, path)
 	}
+
 	return out
 }
 
@@ -626,10 +732,13 @@ func (a TestCmd) writeReport(w io.Writer, suite runner.Suite) error {
 
 func (a TestCmd) colorEnabled(w io.Writer) bool {
 	switch a.Color {
+	case ColorAuto:
+		return isTerminal(w)
 	case ColorAlways:
 		return true
 	case ColorNever:
 		return false
 	}
-	return isTerminal(w)
+
+	return false
 }

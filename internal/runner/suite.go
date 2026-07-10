@@ -21,6 +21,7 @@ func (s Suite) Summary() Summary {
 	var out Summary
 	for _, r := range s.Results {
 		out.Total++
+
 		switch r.Status {
 		case Pass:
 			out.Passed++
@@ -36,6 +37,7 @@ func (s Suite) Summary() Summary {
 			out.XPassed++
 		}
 	}
+
 	return out
 }
 
@@ -45,5 +47,6 @@ func (s Suite) Failed() bool {
 			return true
 		}
 	}
+
 	return false
 }

@@ -1,6 +1,7 @@
 package runner
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"strings"
@@ -27,12 +28,14 @@ func newOpenMPState() *openMPState {
 
 func (state *openMPState) clone() *openMPState {
 	clone := newOpenMPState()
+
 	clone.nextPlayer = state.nextPlayer
 	for id, player := range state.players {
-		copy := *player
-		copy.messages = append([]string(nil), player.messages...)
-		clone.players[id] = &copy
+		playerCopy := *player
+		playerCopy.messages = append([]string(nil), player.messages...)
+		clone.players[id] = &playerCopy
 	}
+
 	return clone
 }
 
@@ -67,14 +70,18 @@ func registerOpenMPPlayerNatives(vm backend.VM, nativeState *nativeState, state 
 				if mocks.configured(name) {
 					return mockUnknownNative(name, mocks, allowUnknown)(ctx, params)
 				}
+
 				mocks.recordCall(name, ctx, params)
+
 				return native(ctx, params)
 			}
 		}
+
 		if err := vm.RegisterNative(name, registered); err != nil {
 			return err
 		}
 	}
+
 	return nil
 }
 
@@ -82,13 +89,16 @@ func (state *openMPState) createPlayer(ctx backend.NativeContext, params []backe
 	if len(params) < 1 {
 		return -1, nil
 	}
+
 	name, err := ctx.ReadString(params[0])
 	if err != nil {
 		return -1, err
 	}
+
 	id := state.nextPlayer
 	state.nextPlayer++
 	state.players[id] = &testPlayer{name: name, connected: true}
+
 	return backend.Cell(id), nil
 }
 
@@ -102,6 +112,7 @@ func (state *openMPState) isPlayerConnected(_ backend.NativeContext, params []ba
 	if ok && player.connected {
 		return 1, nil
 	}
+
 	return 0, nil
 }
 
@@ -110,6 +121,7 @@ func (state *openMPState) getPlayerName(ctx backend.NativeContext, params []back
 	if !ok || len(params) < 3 {
 		return 0, nil
 	}
+
 	return 1, ctx.WriteString(params[1], truncateString(player.name, int(params[2])))
 }
 
@@ -118,7 +130,9 @@ func (state *openMPState) setPlayerPos(_ backend.NativeContext, params []backend
 	if !ok || len(params) < 4 {
 		return 0, nil
 	}
+
 	player.x, player.y, player.z = cellFloat(params[1]), cellFloat(params[2]), cellFloat(params[3])
+
 	return 1, nil
 }
 
@@ -127,11 +141,13 @@ func (state *openMPState) getPlayerPos(ctx backend.NativeContext, params []backe
 	if !ok || len(params) < 4 {
 		return 0, nil
 	}
+
 	for index, value := range []float32{player.x, player.y, player.z} {
 		if err := ctx.WriteCell(params[index+1], floatCell(value)); err != nil {
 			return 0, err
 		}
 	}
+
 	return 1, nil
 }
 
@@ -140,7 +156,9 @@ func (state *openMPState) setPlayerMoney(_ backend.NativeContext, params []backe
 	if !ok || len(params) < 2 {
 		return 0, nil
 	}
+
 	player.money = int(params[1])
+
 	return 1, nil
 }
 
@@ -149,7 +167,9 @@ func (state *openMPState) givePlayerMoney(_ backend.NativeContext, params []back
 	if !ok || len(params) < 2 {
 		return 0, nil
 	}
+
 	player.money += int(params[1])
+
 	return 1, nil
 }
 
@@ -158,6 +178,7 @@ func (state *openMPState) getPlayerMoney(_ backend.NativeContext, params []backe
 	if !ok {
 		return 0, nil
 	}
+
 	return backend.Cell(player.money), nil
 }
 
@@ -166,11 +187,14 @@ func (state *openMPState) sendClientMessage(ctx backend.NativeContext, params []
 	if !ok || len(params) < 3 {
 		return 0, nil
 	}
+
 	message, err := ctx.ReadString(params[2])
 	if err != nil {
 		return 0, err
 	}
+
 	player.messages = append(player.messages, message)
+
 	return 1, nil
 }
 
@@ -178,15 +202,18 @@ func (state *openMPState) sendClientMessageToAll(ctx backend.NativeContext, para
 	if len(params) < 2 {
 		return 0, nil
 	}
+
 	message, err := ctx.ReadString(params[1])
 	if err != nil {
 		return 0, err
 	}
+
 	for _, player := range state.players {
 		if player.connected {
 			player.messages = append(player.messages, message)
 		}
 	}
+
 	return 1, nil
 }
 
@@ -195,22 +222,27 @@ func (state *openMPState) kick(_ backend.NativeContext, params []backend.Cell) (
 	if !ok {
 		return 0, nil
 	}
+
 	player.connected = false
+
 	return 1, nil
 }
 
 func (state *openMPState) assertConnected(result *nativeState) backend.NativeFunc {
 	return func(ctx backend.NativeContext, params []backend.Cell) (backend.Cell, error) {
 		if len(params) < 4 {
-			return 0, fmt.Errorf("player connected assertion expects 4 arguments")
+			return 0, errors.New("player connected assertion expects 4 arguments")
 		}
+
 		player, exists := state.paramPlayer(params)
 		actual := exists && player.connected
+
 		expected := len(params) >= 2 && params[1] != 0
 		if actual != expected {
 			setFailure(result, params, 2, fmt.Sprintf("player %d connected state: expected %t, got %t", params[0], expected, actual), ctx)
 			return 0, nil
 		}
+
 		return 1, nil
 	}
 }
@@ -218,17 +250,21 @@ func (state *openMPState) assertConnected(result *nativeState) backend.NativeFun
 func (state *openMPState) assertMoney(result *nativeState) backend.NativeFunc {
 	return func(ctx backend.NativeContext, params []backend.Cell) (backend.Cell, error) {
 		if len(params) < 4 {
-			return 0, fmt.Errorf("player money assertion expects 4 arguments")
+			return 0, errors.New("player money assertion expects 4 arguments")
 		}
+
 		player, ok := state.paramPlayer(params)
 		if !ok || player.money != int(params[1]) {
 			actual := 0
 			if ok {
 				actual = player.money
 			}
+
 			setFailure(result, params, 2, fmt.Sprintf("player %d money: expected %d, got %d", params[0], params[1], actual), ctx)
+
 			return 0, nil
 		}
+
 		return 1, nil
 	}
 }
@@ -236,11 +272,13 @@ func (state *openMPState) assertMoney(result *nativeState) backend.NativeFunc {
 func (state *openMPState) assertMessage(result *nativeState) backend.NativeFunc {
 	return func(ctx backend.NativeContext, params []backend.Cell) (backend.Cell, error) {
 		if len(params) < 5 {
-			return 0, fmt.Errorf("player message assertion expects 5 arguments")
+			return 0, errors.New("player message assertion expects 5 arguments")
 		}
+
 		player, ok := state.paramPlayer(params)
 		expected := readStringParam(ctx, params, 1)
 		contains := len(params) >= 3 && params[2] != 0
+
 		if ok {
 			for _, message := range player.messages {
 				if message == expected || contains && strings.Contains(message, expected) {
@@ -248,11 +286,14 @@ func (state *openMPState) assertMessage(result *nativeState) backend.NativeFunc 
 				}
 			}
 		}
+
 		messages := []string(nil)
 		if ok {
 			messages = player.messages
 		}
+
 		setFailure(result, params, 3, fmt.Sprintf("player %d message: expected %q; recorded %q", params[0], expected, messages), ctx)
+
 		return 0, nil
 	}
 }
@@ -260,18 +301,21 @@ func (state *openMPState) assertMessage(result *nativeState) backend.NativeFunc 
 func (state *openMPState) assertPosition(result *nativeState) backend.NativeFunc {
 	return func(ctx backend.NativeContext, params []backend.Cell) (backend.Cell, error) {
 		if len(params) < 7 {
-			return 0, fmt.Errorf("player position assertion expects 7 arguments")
+			return 0, errors.New("player position assertion expects 7 arguments")
 		}
+
 		player, ok := state.paramPlayer(params)
 		if !ok {
 			setFailure(result, params, 5, fmt.Sprintf("player %d does not exist", params[0]), ctx)
 			return 0, nil
 		}
+
 		x, y, z, tolerance := cellFloat(params[1]), cellFloat(params[2]), cellFloat(params[3]), float32(math.Abs(float64(cellFloat(params[4]))))
 		if absFloat(player.x-x) > tolerance || absFloat(player.y-y) > tolerance || absFloat(player.z-z) > tolerance {
 			setFailure(result, params, 5, fmt.Sprintf("player %d position: expected (%g, %g, %g) +/- %g, got (%g, %g, %g)", params[0], x, y, z, tolerance, player.x, player.y, player.z), ctx)
 			return 0, nil
 		}
+
 		return 1, nil
 	}
 }
@@ -280,6 +324,7 @@ func (state *openMPState) paramPlayer(params []backend.Cell) (*testPlayer, bool)
 	if len(params) < 1 {
 		return nil, false
 	}
+
 	return state.player(params[0])
 }
 
@@ -289,5 +334,6 @@ func absFloat(value float32) float32 {
 	if value < 0 {
 		return -value
 	}
+
 	return value
 }

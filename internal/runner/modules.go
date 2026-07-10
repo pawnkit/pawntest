@@ -60,6 +60,7 @@ func defaultNativeModules() []nativeModule {
 					return err
 				}
 			}
+
 			return nil
 		}),
 	}
@@ -84,6 +85,7 @@ func (registry *scenarioRegistry) Register(vm backend.VM, context *executionCont
 			return err
 		}
 	}
+
 	return nil
 }
 
@@ -92,6 +94,7 @@ func (registry *scenarioRegistry) Clone() *scenarioRegistry {
 	for _, module := range registry.modules {
 		clone.modules = append(clone.modules, module.Clone())
 	}
+
 	return clone
 }
 

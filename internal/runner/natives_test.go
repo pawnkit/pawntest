@@ -14,13 +14,16 @@ func TestRunnerRecordsAssertionNativeFailure(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if len(suite.Results) != 1 {
 		t.Fatalf("len(results) = %d, want 1", len(suite.Results))
 	}
+
 	got := suite.Results[0]
 	if got.Status != Fail {
 		t.Fatalf("status = %s, want %s", got.Status, Fail)
 	}
+
 	if got.Message == "" {
 		t.Fatal("expected failure message")
 	}
@@ -35,9 +38,11 @@ func TestAssertNativePassesOnNonZeroCondition(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if got != 1 {
 		t.Fatalf("nativeAssert() = %d, want 1", got)
 	}
+
 	if state.status != "" || state.message != "" {
 		t.Fatalf("nativeAssert() recorded failure state: %+v", state)
 	}
@@ -113,6 +118,6 @@ func (vm *fakeVM) ReadCell(addr backend.Cell) (backend.Cell, error) {
 	return 0, nil
 }
 
-func (vm *fakeVM) WriteCell(addr backend.Cell, value backend.Cell) error {
+func (vm *fakeVM) WriteCell(addr, value backend.Cell) error {
 	return nil
 }

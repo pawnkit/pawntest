@@ -35,13 +35,13 @@ func isFloatNative(name string) bool {
 
 func registerFloatNatives(vm backend.VM) error {
 	for name := range floatNativeNames {
-		name := name
 		if err := vm.RegisterNative(name, func(ctx backend.NativeContext, params []backend.Cell) (backend.Cell, error) {
 			return callFloatNative(name, ctx, params)
 		}); err != nil {
 			return err
 		}
 	}
+
 	return nil
 }
 
@@ -56,32 +56,40 @@ func callFloatNative(name string, ctx backend.NativeContext, params []backend.Ce
 		if len(params) < count {
 			return fmt.Errorf("native %s expects at least %d arguments", name, count)
 		}
+
 		return nil
 	}
+
 	switch name {
 	case "float":
 		if err := require(1); err != nil {
 			return 0, err
 		}
+
 		return floatCell(float64(params[0])), nil
 	case "strfloat":
 		if err := require(1); err != nil {
 			return 0, err
 		}
+
 		value, err := ctx.ReadString(params[0])
 		if err != nil {
 			return 0, err
 		}
+
 		parsed, err := strconv.ParseFloat(value, 32)
 		if err != nil {
 			return 0, nil
 		}
+
 		return floatCell(parsed), nil
 	case "floatmul", "floatdiv", "floatadd", "floatsub", "floatcmp", "floatpower":
 		if err := require(2); err != nil {
 			return 0, err
 		}
+
 		a, b := floatParam(0), floatParam(1)
+
 		switch name {
 		case "floatmul":
 			return floatCell(a * b), nil
@@ -97,25 +105,31 @@ func callFloatNative(name string, ctx backend.NativeContext, params []backend.Ce
 			if a < b {
 				return -1, nil
 			}
+
 			if a > b {
 				return 1, nil
 			}
+
 			return 0, nil
 		}
 	case "floatlog":
 		if err := require(1); err != nil {
 			return 0, err
 		}
+
 		base := 10.0
 		if len(params) > 1 {
 			base = floatParam(1)
 		}
+
 		return floatCell(math.Log(floatParam(0)) / math.Log(base)), nil
 	case "floatfract", "floatsqroot", "floatsin", "floatcos", "floattan", "floatabs":
 		if err := require(1); err != nil {
 			return 0, err
 		}
+
 		value := floatParam(0)
+
 		switch name {
 		case "floatfract":
 			_, value = math.Modf(value)
@@ -126,34 +140,43 @@ func callFloatNative(name string, ctx backend.NativeContext, params []backend.Ce
 			if len(params) > 1 {
 				mode = params[1]
 			}
+
 			if mode == 1 {
 				value *= math.Pi / 180
 			}
+
 			if mode == 2 {
 				value *= math.Pi / 200
 			}
+
 			if name == "floatsin" {
 				value = math.Sin(value)
 			}
+
 			if name == "floatcos" {
 				value = math.Cos(value)
 			}
+
 			if name == "floattan" {
 				value = math.Tan(value)
 			}
 		case "floatabs":
 			value = math.Abs(value)
 		}
+
 		return floatCell(value), nil
 	case "floatround":
 		if err := require(1); err != nil {
 			return 0, err
 		}
+
 		mode := backend.Cell(0)
 		if len(params) > 1 {
 			mode = params[1]
 		}
+
 		value := floatParam(0)
+
 		switch mode {
 		case 1:
 			value = math.Floor(value)
@@ -164,12 +187,15 @@ func callFloatNative(name string, ctx backend.NativeContext, params []backend.Ce
 		default:
 			value = math.Floor(value + 0.5)
 		}
+
 		return backend.Cell(int32(value)), nil
 	case "floatint":
 		if err := require(1); err != nil {
 			return 0, err
 		}
+
 		return backend.Cell(int32(math.Trunc(floatParam(0)))), nil
 	}
+
 	return 0, fmt.Errorf("unsupported float native %s", name)
 }

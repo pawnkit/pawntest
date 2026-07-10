@@ -18,6 +18,7 @@ func TestTestPublicsSkipsFixtures(t *testing.T) {
 	}
 
 	got := TestPublics(publics)
+
 	want := []backend.Public{{Index: 1, Name: "test_addition"}, {Index: 4, Name: "test_strings"}}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Fatalf("TestPublics mismatch (-want +got):\n%s", diff)

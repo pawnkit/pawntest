@@ -41,8 +41,10 @@ func extractZip(path, dest string) error {
 			if err := os.MkdirAll(target, 0o755); err != nil {
 				return err
 			}
+
 			continue
 		}
+
 		if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 			return err
 		}
@@ -51,12 +53,15 @@ func extractZip(path, dest string) error {
 		if err != nil {
 			return err
 		}
+
 		if err := writeFileFromReader(target, src, f.FileInfo().Mode()); err != nil {
 			src.Close()
 			return err
 		}
+
 		src.Close()
 	}
+
 	return nil
 }
 
@@ -79,9 +84,11 @@ func extractTarGZ(path, dest string) error {
 		if errors.Is(err, io.EOF) {
 			return nil
 		}
+
 		if err != nil {
 			return err
 		}
+
 		if err := extractTarEntry(dest, hdr, tr); err != nil {
 			return err
 		}
@@ -101,6 +108,7 @@ func extractTarEntry(dest string, hdr *tar.Header, r io.Reader) error {
 		if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 			return err
 		}
+
 		return writeFileFromReader(target, r, os.FileMode(hdr.Mode))
 	default:
 		return nil
@@ -114,13 +122,16 @@ func safeExtractPath(dest, name string) error {
 	}
 
 	target := filepath.Join(dest, clean)
+
 	rel, err := filepath.Rel(dest, target)
 	if err != nil {
 		return err
 	}
+
 	if rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
 		return fmt.Errorf("unsafe archive path %q", name)
 	}
+
 	return nil
 }
 
@@ -136,5 +147,6 @@ func writeFileFromReader(path string, r io.Reader, mode os.FileMode) error {
 	defer out.Close()
 
 	_, err = io.Copy(out, r)
+
 	return err
 }

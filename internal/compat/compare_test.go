@@ -4,8 +4,8 @@ import (
 	"encoding/binary"
 	"testing"
 
-	"github.com/pawnkit/pawntest/internal/backend"
 	goamx "github.com/pawnkit/goamx/vm"
+	"github.com/pawnkit/pawntest/internal/backend"
 )
 
 func TestCompareEqualBackends(t *testing.T) {
@@ -16,6 +16,7 @@ func TestCompareEqualBackends(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if !result.Equal() {
 		t.Fatalf("expected equal comparison, got %#v", result)
 	}
@@ -23,7 +24,9 @@ func TestCompareEqualBackends(t *testing.T) {
 
 func compatAMX(t *testing.T, chunks ...[]byte) []byte {
 	t.Helper()
+
 	const headerSize = 56
+
 	publics := uint32(headerSize)
 	natives := publics + 8
 	libs := natives
@@ -36,13 +39,16 @@ func compatAMX(t *testing.T, chunks ...[]byte) []byte {
 		data = append(data, 0)
 	}
 	appendName(publics+4, "test_const")
+
 	for len(data)%4 != 0 {
 		data = append(data, 0)
 	}
+
 	cod := uint32(len(data))
 	for _, chunk := range chunks {
 		data = append(data, chunk...)
 	}
+
 	dat := uint32(len(data))
 	binary.LittleEndian.PutUint32(data[0:4], uint32(len(data)))
 	binary.LittleEndian.PutUint16(data[4:6], 0xf1e0)
@@ -60,6 +66,7 @@ func compatAMX(t *testing.T, chunks ...[]byte) []byte {
 	binary.LittleEndian.PutUint32(data[48:52], libs)
 	binary.LittleEndian.PutUint32(data[52:56], libs)
 	binary.LittleEndian.PutUint32(data[0:4], uint32(len(data)))
+
 	return data
 }
 
@@ -68,11 +75,13 @@ func compatInstr(data []byte, op goamx.Opcode, params ...backend.Cell) []byte {
 	for _, param := range params {
 		data = compatCell(data, param)
 	}
+
 	return data
 }
 
 func compatCell(data []byte, value backend.Cell) []byte {
 	var buf [4]byte
 	binary.LittleEndian.PutUint32(buf[:], uint32(int32(value)))
+
 	return append(data, buf[:]...)
 }

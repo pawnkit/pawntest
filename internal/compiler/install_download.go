@@ -39,6 +39,7 @@ func downloadAsset(ctx context.Context, client *http.Client, url string) (string
 		os.Remove(tmp.Name())
 		return "", err
 	}
+
 	if info, err := tmp.Stat(); err != nil {
 		os.Remove(tmp.Name())
 		return "", err
@@ -46,6 +47,7 @@ func downloadAsset(ctx context.Context, client *http.Client, url string) (string
 		os.Remove(tmp.Name())
 		return "", errors.New("compiler download exceeded maximum allowed size")
 	}
+
 	return tmp.Name(), nil
 }
 
@@ -74,8 +76,10 @@ func verifyAssetDigest(path, digest string) error {
 	if _, err := io.Copy(hash, f); err != nil {
 		return err
 	}
+
 	if !bytes.Equal(hash.Sum(nil), want) {
 		return errors.New("compiler download checksum mismatch")
 	}
+
 	return nil
 }
