@@ -236,3 +236,21 @@ TEST(welcome_label)
 ```
 
 Use `TEST_CREATE_PLAYER_TEXT_LABEL` for private labels. The model tracks text, colour, position, draw distance, virtual world, line of sight, streaming, and attachments.
+
+## Textdraw scenarios
+
+Create and display global or player textdraws:
+
+```pawn
+TEST(shows_title)
+{
+    new playerid = TEST_CREATE_PLAYER("Alice");
+    new textid = TEST_CREATE_TEXTDRAW(100.0, 50.0, "Title");
+
+    TextDrawShowForPlayer(playerid, textid);
+    ASSERT_TEXTDRAW_TEXT(textid, "Title");
+    ASSERT_TEXTDRAW_VISIBLE(playerid, textid);
+}
+```
+
+Use `TEST_CREATE_PLAYER_TEXTDRAW` for private textdraws. The model tracks styling, text, position, visibility, selection, and model previews.
