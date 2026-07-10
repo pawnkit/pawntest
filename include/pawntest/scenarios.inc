@@ -29,3 +29,7 @@ native __pt_pickup_model(pickupid, model, const file[], line);
 native __pt_pickup_pos_near(pickupid, Float:x, Float:y, Float:z, Float:tolerance, const file[], line);
 native __pt_player_pickup_create(playerid, model, type, Float:x, Float:y, Float:z, virtualWorld);
 native __pt_player_pickup_valid(playerid, pickupid, const file[], line);
+native __pt_checkpoint_active(playerid, bool:active, const file[], line);
+native __pt_checkpoint_inside(playerid, bool:inside, const file[], line);
+native __pt_race_checkpoint_active(playerid, bool:active, const file[], line);
+native __pt_race_checkpoint_inside(playerid, bool:inside, const file[], line);

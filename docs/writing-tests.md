@@ -201,3 +201,22 @@ TEST(health_pickup)
 ```
 
 Use `TEST_CREATE_PLAYER_PICKUP(playerid, model, type, x, y, z, world)` for player pickups. The model tracks models, types, positions, virtual worlds, visibility, and streaming.
+
+## Checkpoint scenarios
+
+Checkpoint state follows the player's modeled position:
+
+```pawn
+TEST(reaches_checkpoint)
+{
+    new playerid = TEST_CREATE_PLAYER("Alice");
+
+    SetPlayerCheckpoint(playerid, 10.0, 20.0, 30.0, 2.0);
+    SetPlayerPos(playerid, 10.0, 20.0, 30.0);
+
+    ASSERT_CHECKPOINT_ACTIVE(playerid);
+    ASSERT_PLAYER_IN_CHECKPOINT(playerid);
+}
+```
+
+Equivalent `ASSERT_RACE_CHECKPOINT_*` helpers cover race checkpoints.
