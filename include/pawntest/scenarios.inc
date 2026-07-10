@@ -7,3 +7,8 @@ native __pt_player_connected(playerid, bool:connected, const file[], line);
 native __pt_player_money(playerid, expected, const file[], line);
 native __pt_player_message(playerid, const expected[], bool:contains, const file[], line);
 native __pt_player_pos_near(playerid, Float:x, Float:y, Float:z, Float:tolerance, const file[], line);
+native __pt_vehicle_create(modelid, Float:x, Float:y, Float:z);
+native __pt_vehicle_valid(vehicleid, const file[], line);
+native __pt_vehicle_model(vehicleid, modelid, const file[], line);
+native __pt_vehicle_health(vehicleid, Float:health, const file[], line);
+native __pt_vehicle_pos_near(vehicleid, Float:x, Float:y, Float:z, Float:tolerance, const file[], line);

@@ -177,13 +177,7 @@ func (state *openMPState) getPlayerVector(field func(*testPlayer) *[3]float32) b
 			return 0, nil
 		}
 
-		for index, value := range *field(player) {
-			if err := ctx.WriteCell(params[index+1], floatCell(value)); err != nil {
-				return 0, err
-			}
-		}
-
-		return 1, nil
+		return writeFloatVector(ctx, params[1:4], *field(player))
 	}
 }
 

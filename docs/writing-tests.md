@@ -132,3 +132,21 @@ TEST(welcomes_player)
 ```
 
 Other server or plugin natives require mocks or custom Go natives.
+
+## Vehicle scenarios
+
+Create and inspect vehicles without a server:
+
+```pawn
+TEST(vehicle_damage)
+{
+    new vehicleid = TEST_CREATE_VEHICLE(411, 10.0, 20.0, 30.0);
+
+    SetVehicleHealth(vehicleid, 750.0);
+    ASSERT_VEHICLE_VALID(vehicleid);
+    ASSERT_VEHICLE_MODEL(vehicleid, 411);
+    ASSERT_VEHICLE_HEALTH(vehicleid, 750.0);
+}
+```
+
+The vehicle model tracks transforms, health, appearance, components, damage, trailers, parameters, respawns, and occupants.

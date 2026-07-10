@@ -76,7 +76,40 @@ type scenarioRegistry struct {
 }
 
 func newScenarioRegistry() *scenarioRegistry {
-	return &scenarioRegistry{modules: []scenarioModule{newOpenMPState()}}
+	return &scenarioRegistry{modules: []scenarioModule{newOpenMPState(), newVehicleState()}}
+}
+
+func registerScenarioNatives(vm backend.VM, natives map[string]backend.NativeFunc, mocks *mockState, allowUnknown bool) error {
+	for name, native := range natives {
+		registered := native
+		if !isPawntestNative(name) {
+			registered = func(ctx backend.NativeContext, params []backend.Cell) (backend.Cell, error) {
+				if mocks.configured(name) {
+					return mockUnknownNative(name, mocks, allowUnknown)(ctx, params)
+				}
+
+				mocks.recordCall(name, ctx, params)
+
+				return native(ctx, params)
+			}
+		}
+
+		if err := vm.RegisterNative(name, registered); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (registry *scenarioRegistry) playerState() *openMPState {
+	for _, module := range registry.modules {
+		if state, ok := module.(*openMPState); ok {
+			return state
+		}
+	}
+
+	return nil
 }
 
 func (registry *scenarioRegistry) Register(vm backend.VM, context *executionContext) error {

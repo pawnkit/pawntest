@@ -26,6 +26,7 @@ type testPlayer struct {
 	keys                       [3]backend.Cell
 	weapons                    map[int]int
 	armedWeapon                int
+	vehicle, seat              int
 	messages                   []string
 }
 
@@ -81,26 +82,7 @@ func registerOpenMPPlayerNatives(vm backend.VM, nativeState *nativeState, state 
 	maps.Copy(natives, state.equipmentNatives())
 	maps.Copy(natives, state.cameraNatives())
 
-	for name, native := range natives {
-		registered := native
-		if !isPawntestNative(name) {
-			registered = func(ctx backend.NativeContext, params []backend.Cell) (backend.Cell, error) {
-				if mocks.configured(name) {
-					return mockUnknownNative(name, mocks, allowUnknown)(ctx, params)
-				}
-
-				mocks.recordCall(name, ctx, params)
-
-				return native(ctx, params)
-			}
-		}
-
-		if err := vm.RegisterNative(name, registered); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return registerScenarioNatives(vm, natives, mocks, allowUnknown)
 }
 
 func (state *openMPState) createPlayer(ctx backend.NativeContext, params []backend.Cell) (backend.Cell, error) {
@@ -123,6 +105,8 @@ func (state *openMPState) createPlayer(ctx backend.NativeContext, params []backe
 		health:       100,
 		gravity:      0.008,
 		weapons:      map[int]int{},
+		vehicle:      -1,
+		seat:         -1,
 	}
 
 	return backend.Cell(id), nil
