@@ -1,10 +1,6 @@
 package runner
 
-import (
-	"slices"
-
-	"github.com/pawnkit/pawntest/internal/backend"
-)
+import "github.com/pawnkit/pawntest/internal/backend"
 
 func (state *actorState) applyActorAnimation(ctx backend.NativeContext, params []backend.Cell) (backend.Cell, error) {
 	actor, ok := state.actor(params)
@@ -97,23 +93,10 @@ func (state *actorState) getActorSpawnInfo(ctx backend.NativeContext, params []b
 }
 
 func (state *actorState) getActors(ctx backend.NativeContext, params []backend.Cell) (backend.Cell, error) {
-	if len(params) < 2 || params[1] <= 0 {
-		return 0, nil
-	}
-
 	ids := make([]int, 0, len(state.actors))
 	for id := range state.actors {
 		ids = append(ids, id)
 	}
 
-	slices.Sort(ids)
-
-	limit := min(len(ids), int(params[1]))
-	for index, id := range ids[:limit] {
-		if err := ctx.WriteCell(params[0]+backend.Cell(index*4), backend.Cell(id)); err != nil {
-			return 0, err
-		}
-	}
-
-	return backend.Cell(limit), nil
+	return writeEntityIDs(ctx, params, ids)
 }

@@ -376,3 +376,23 @@ TEST(configures_world)
 ```
 
 The model also tracks server rules, nickname characters, client settings, pool sizes, and common server toggles.
+
+## NPC scenarios
+
+Create and control NPCs without a server:
+
+```pawn
+TEST(moves_guard)
+{
+    new npcid = TEST_CREATE_NPC("Guard");
+
+    NPC_Spawn(npcid);
+    NPC_SetPos(npcid, 10.0, 20.0, 30.0);
+
+    ASSERT_NPC_VALID(npcid);
+    ASSERT_NPC_SPAWNED(npcid);
+    ASSERT_NPC_POS_NEAR(npcid, 10.0, 20.0, 30.0, 0.01);
+}
+```
+
+The core NPC model covers lifecycle, transforms, movement, streaming, appearance, health, armour, invulnerability, and vehicle placement.

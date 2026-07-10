@@ -78,3 +78,8 @@ native __pt_server_time(expected, const file[], line);
 native __pt_server_gravity(Float:expected, Float:tolerance, const file[], line);
 native __pt_server_mode_text(const expected[], const file[], line);
 native __pt_server_rule(const name[], const expected[], const file[], line);
+native __pt_npc_create(const name[]);
+native __pt_npc_valid(npcid, const file[], line);
+native __pt_npc_spawned(npcid, bool:spawned, const file[], line);
+native __pt_npc_health(npcid, Float:expected, Float:tolerance, const file[], line);
+native __pt_npc_pos_near(npcid, Float:x, Float:y, Float:z, Float:tolerance, const file[], line);

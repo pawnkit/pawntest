@@ -1,0 +1,114 @@
+package runner
+
+import "github.com/pawnkit/pawntest/internal/backend"
+
+type testNPC struct {
+	name                         string
+	spawned, dead, invulnerable  bool
+	moving, movingToPlayer       bool
+	position, rotation, velocity [3]float32
+	moveTarget                   [3]float32
+	facing, health, armour       float32
+	world, skin, interior        int
+	movePlayer                   int
+	vehicle, seat                int
+}
+
+type npcState struct {
+	next     int
+	npcs     map[int]*testNPC
+	players  *openMPState
+	vehicles *vehicleState
+}
+
+func newNPCState() *npcState {
+	return &npcState{npcs: map[int]*testNPC{}}
+}
+
+func (state *npcState) Clone() scenarioModule {
+	clone := newNPCState()
+
+	clone.next = state.next
+	for id, npc := range state.npcs {
+		npcCopy := *npc
+		clone.npcs[id] = &npcCopy
+	}
+
+	return clone
+}
+
+func (state *npcState) Register(vm backend.VM, context *executionContext) error {
+	state.players = context.scenarios.playerState()
+	state.vehicles = context.scenarios.vehicleState()
+
+	return registerScenarioNatives(vm, state.natives(context.state), context.mocks, context.allowUnknown)
+}
+
+func (state *npcState) natives(result *nativeState) map[string]backend.NativeFunc {
+	return map[string]backend.NativeFunc{
+		"__pt_npc_create": state.createNPC, "__pt_npc_valid": state.assertValid(result),
+		"__pt_npc_spawned": state.assertSpawned(result), "__pt_npc_health": state.assertHealth(result),
+		"__pt_npc_pos_near": state.assertPosition(result), "NPC_Create": state.createNPC,
+		"NPC_Destroy": state.destroyNPC, "NPC_IsValid": state.isValidNPC,
+		"NPC_IsDead": state.isDeadNPC, "NPC_Spawn": state.spawnNPC,
+		"NPC_Respawn": state.spawnNPC, "NPC_IsSpawned": state.isSpawnedNPC,
+		"NPC_GetAll": state.getAllNPCs, "NPC_SetPos": state.setNPCVector(npcPosition),
+		"NPC_GetPos": state.getNPCVector(npcPosition), "NPC_SetRot": state.setNPCVector(npcRotation),
+		"NPC_GetRot": state.getNPCVector(npcRotation), "NPC_SetVelocity": state.setNPCVector(npcVelocity),
+		"NPC_GetVelocity": state.getNPCVector(npcVelocity), "NPC_GetPosMovingTo": state.getNPCVector(npcMoveTarget),
+		"NPC_SetFacingAngle": state.setNPCFloat(npcFacing), "NPC_GetFacingAngle": state.getNPCFloatOutput(npcFacing),
+		"NPC_SetVirtualWorld": state.setNPCInt(npcWorld), "NPC_GetVirtualWorld": state.getNPCInt(npcWorld),
+		"NPC_SetSkin": state.setNPCInt(npcSkin), "NPC_GetSkin": state.getNPCInt(npcSkin),
+		"NPC_GetCustomSkin": state.getNPCInt(npcSkin), "NPC_SetInterior": state.setNPCInt(npcInterior),
+		"NPC_GetInterior": state.getNPCInt(npcInterior), "NPC_SetHealth": state.setNPCFloat(npcHealth),
+		"NPC_GetHealth": state.getNPCFloat(npcHealth), "NPC_SetArmour": state.setNPCFloat(npcArmour),
+		"NPC_GetArmour": state.getNPCFloat(npcArmour), "NPC_SetInvulnerable": state.setNPCInvulnerable,
+		"NPC_IsInvulnerable": state.isNPCInvulnerable, "NPC_Kill": state.killNPC,
+		"NPC_IsStreamedIn": state.isNPCStreamedIn, "NPC_IsAnyStreamedIn": state.isNPCAnyStreamedIn,
+		"NPC_Move": state.moveNPC, "NPC_MoveToPlayer": state.moveNPCToPlayer,
+		"NPC_StopMove": state.stopNPCMove, "NPC_IsMoving": state.isNPCMoving,
+		"NPC_IsMovingToPlayer": state.isNPCMovingToPlayer, "NPC_SetAngleToPos": state.setNPCAngleToPosition,
+		"NPC_SetAngleToPlayer": state.setNPCAngleToPlayer, "NPC_PutInVehicle": state.putNPCInVehicle,
+		"NPC_RemoveFromVehicle": state.removeNPCFromVehicle, "NPC_GetVehicle": state.getNPCVehicle,
+		"NPC_GetVehicleID": state.getNPCVehicle, "NPC_GetVehicleSeat": state.getNPCVehicleSeat,
+		"NPC_EnterVehicle": state.putNPCInVehicle, "NPC_ExitVehicle": state.removeNPCFromVehicle,
+	}
+}
+
+func (state *npcState) createNPC(ctx backend.NativeContext, params []backend.Cell) (backend.Cell, error) {
+	if len(params) == 0 {
+		return -1, nil
+	}
+
+	name, err := ctx.ReadString(params[0])
+	if err != nil {
+		return -1, err
+	}
+
+	id := state.next
+	state.next++
+	state.npcs[id] = &testNPC{name: name, health: 100, movePlayer: -1, vehicle: -1, seat: -1}
+
+	return backend.Cell(id), nil
+}
+
+func (state *npcState) npc(params []backend.Cell) (*testNPC, bool) {
+	if len(params) == 0 {
+		return nil, false
+	}
+
+	npc, ok := state.npcs[int(params[0])]
+
+	return npc, ok
+}
+
+func npcPosition(npc *testNPC) *[3]float32   { return &npc.position }
+func npcRotation(npc *testNPC) *[3]float32   { return &npc.rotation }
+func npcVelocity(npc *testNPC) *[3]float32   { return &npc.velocity }
+func npcMoveTarget(npc *testNPC) *[3]float32 { return &npc.moveTarget }
+func npcFacing(npc *testNPC) *float32        { return &npc.facing }
+func npcHealth(npc *testNPC) *float32        { return &npc.health }
+func npcArmour(npc *testNPC) *float32        { return &npc.armour }
+func npcWorld(npc *testNPC) *int             { return &npc.world }
+func npcSkin(npc *testNPC) *int              { return &npc.skin }
+func npcInterior(npc *testNPC) *int          { return &npc.interior }

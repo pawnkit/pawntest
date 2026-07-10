@@ -315,6 +315,24 @@ public __pawntest_marker()
 #define ASSERT_SERVER_RULE(%0,%1) \
     if (!__pt_server_rule((%0), (%1), __file, __line)) return 0
 
+#define TEST_CREATE_NPC(%0) \
+    __pt_npc_create((%0))
+
+#define ASSERT_NPC_VALID(%0) \
+    if (!__pt_npc_valid((%0), __file, __line)) return 0
+
+#define ASSERT_NPC_SPAWNED(%0) \
+    if (!__pt_npc_spawned((%0), true, __file, __line)) return 0
+
+#define ASSERT_NPC_NOT_SPAWNED(%0) \
+    if (!__pt_npc_spawned((%0), false, __file, __line)) return 0
+
+#define ASSERT_NPC_HEALTH(%0,%1,%2) \
+    if (!__pt_npc_health((%0), (%1), (%2), __file, __line)) return 0
+
+#define ASSERT_NPC_POS_NEAR(%0,%1,%2,%3,%4) \
+    if (!__pt_npc_pos_near((%0), (%1), (%2), (%3), (%4), __file, __line)) return 0
+
 #define ASSERT(%0) \
     if (!__pawntest_assert((%0), #%0, __file, __line)) return 0
 
