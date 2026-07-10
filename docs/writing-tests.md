@@ -185,3 +185,19 @@ TEST(actor_damage)
 ```
 
 The actor model tracks transforms, health, skins, virtual worlds, invulnerability, animations, and player streaming.
+
+## Pickup scenarios
+
+Create global or player-scoped pickups:
+
+```pawn
+TEST(health_pickup)
+{
+    new pickupid = TEST_CREATE_PICKUP(1240, 2, 10.0, 20.0, 30.0, 0);
+
+    ASSERT_PICKUP_VALID(pickupid);
+    ASSERT_PICKUP_MODEL(pickupid, 1240);
+}
+```
+
+Use `TEST_CREATE_PLAYER_PICKUP(playerid, model, type, x, y, z, world)` for player pickups. The model tracks models, types, positions, virtual worlds, visibility, and streaming.
