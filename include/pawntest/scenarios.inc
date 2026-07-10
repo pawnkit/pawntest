@@ -86,3 +86,6 @@ native __pt_npc_pos_near(npcid, Float:x, Float:y, Float:z, Float:tolerance, cons
 native __pt_npc_weapon(npcid, expected, const file[], line);
 native __pt_npc_aiming(npcid, bool:aiming, const file[], line);
 native __pt_npc_animation(npcid, const library[], const name[], const file[], line);
+native __pt_npc_playback(npcid, bool:playing, const file[], line);
+native __pt_npc_path_count(expected, const file[], line);
+native __pt_npc_record_count(expected, const file[], line);

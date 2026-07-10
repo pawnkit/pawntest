@@ -7,49 +7,87 @@ import (
 )
 
 type testNPC struct {
-	name                         string
-	spawned, dead, invulnerable  bool
-	moving, movingToPlayer       bool
-	position, rotation, velocity [3]float32
-	moveTarget                   [3]float32
-	facing, health, armour       float32
-	world, skin, interior        int
-	movePlayer                   int
-	vehicle, seat                int
-	weapon, ammo, ammoInClip     int
-	keys                         [3]int
-	melee, reloadEnabled         bool
-	reloading, infiniteAmmo      bool
-	weaponState, fightingStyle   int
-	shooting, aiming             bool
-	aimPlayer                    int
-	aimPoint                     [3]float32
-	weaponAccuracy               map[int]float32
-	weaponReloadTime             map[int]int
-	weaponShootTime              map[int]int
-	weaponClipSize               map[int]int
-	weaponSkills                 map[int]int
-	animationID                  int
-	animation                    actorAnimation
-	hasAnimation                 bool
-	specialAction                int
+	name                            string
+	spawned, dead, invulnerable     bool
+	moving, movingToPlayer          bool
+	position, rotation, velocity    [3]float32
+	moveTarget                      [3]float32
+	facing, health, armour          float32
+	world, skin, interior           int
+	movePlayer                      int
+	vehicle, seat                   int
+	weapon, ammo, ammoInClip        int
+	keys                            [3]int
+	melee, reloadEnabled            bool
+	reloading, infiniteAmmo         bool
+	weaponState, fightingStyle      int
+	shooting, aiming                bool
+	aimPlayer                       int
+	aimPoint                        [3]float32
+	weaponAccuracy                  map[int]float32
+	weaponReloadTime                map[int]int
+	weaponShootTime                 map[int]int
+	weaponClipSize                  map[int]int
+	weaponSkills                    map[int]int
+	animationID                     int
+	animation                       actorAnimation
+	hasAnimation                    bool
+	specialAction                   int
+	playbackName                    string
+	playbackRecord                  int
+	playingPlayback, pausedPlayback bool
+	surfingOffset                   [3]float32
+	surfingVehicle, surfingObject   int
+	surfingPlayerObject             int
+	currentPath, currentPathPoint   int
+	playingNode, nodeID             int
+	nodePaused                      bool
+}
+
+type npcPathPoint struct {
+	position  [3]float32
+	stopRange float32
+}
+
+type npcPath struct{ points []npcPathPoint }
+
+type npcNode struct {
+	open  bool
+	point int
 }
 
 type npcState struct {
-	next     int
-	npcs     map[int]*testNPC
-	players  *openMPState
-	vehicles *vehicleState
+	next       int
+	npcs       map[int]*testNPC
+	players    *openMPState
+	vehicles   *vehicleState
+	nextRecord int
+	records    map[int]string
+	nextPath   int
+	paths      map[int]*npcPath
+	nodes      map[int]*npcNode
 }
 
 func newNPCState() *npcState {
-	return &npcState{npcs: map[int]*testNPC{}}
+	return &npcState{npcs: map[int]*testNPC{}, records: map[int]string{}, paths: map[int]*npcPath{}, nodes: map[int]*npcNode{}}
 }
 
 func (state *npcState) Clone() scenarioModule {
 	clone := newNPCState()
 
 	clone.next = state.next
+	clone.nextRecord, clone.nextPath = state.nextRecord, state.nextPath
+	maps.Copy(clone.records, state.records)
+
+	for id, path := range state.paths {
+		clone.paths[id] = &npcPath{points: append([]npcPathPoint(nil), path.points...)}
+	}
+
+	for id, node := range state.nodes {
+		nodeCopy := *node
+		clone.nodes[id] = &nodeCopy
+	}
+
 	for id, npc := range state.npcs {
 		npcCopy := *npc
 		npcCopy.weaponAccuracy = maps.Clone(npc.weaponAccuracy)
@@ -100,6 +138,7 @@ func (state *npcState) natives(result *nativeState) map[string]backend.NativeFun
 		"NPC_EnterVehicle": state.putNPCInVehicle, "NPC_ExitVehicle": state.removeNPCFromVehicle,
 	}
 	maps.Copy(natives, state.combatNatives(result))
+	maps.Copy(natives, state.navigationNatives(result))
 
 	return natives
 }
@@ -118,6 +157,8 @@ func (state *npcState) createNPC(ctx backend.NativeContext, params []backend.Cel
 	state.next++
 	state.npcs[id] = &testNPC{
 		name: name, health: 100, movePlayer: -1, vehicle: -1, seat: -1, aimPlayer: -1,
+		playbackRecord: -1, surfingVehicle: -1, surfingObject: -1, surfingPlayerObject: -1,
+		currentPath: -1, currentPathPoint: -1, playingNode: -1, nodeID: -1,
 		weaponAccuracy: map[int]float32{}, weaponReloadTime: map[int]int{}, weaponShootTime: map[int]int{},
 		weaponClipSize: map[int]int{}, weaponSkills: map[int]int{},
 	}

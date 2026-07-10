@@ -409,3 +409,19 @@ ASSERT_NPC_WEAPON(npcid, WEAPON_COLT45);
 ASSERT_NPC_AIMING(npcid);
 ASSERT_NPC_ANIMATION(npcid, "PED", "WALK_player");
 ```
+
+Playback and navigation are modeled as well:
+
+```pawn
+new recordid = NPC_LoadRecord("routes/guard.rec");
+new pathid = NPC_CreatePath();
+
+NPC_AddPointToPath(pathid, 10.0, 20.0, 30.0);
+NPC_StartPlaybackEx(npcid, recordid);
+
+ASSERT_NPC_PLAYBACK(npcid);
+ASSERT_NPC_PATH_COUNT(1);
+ASSERT_NPC_RECORD_COUNT(1);
+```
+
+Paths, records, surfing data, and node playback are isolated between tests.

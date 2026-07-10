@@ -164,6 +164,91 @@ func TestNPCCombatCloneIsolatesWeaponSettings(t *testing.T) {
 	}
 }
 
+func TestNPCPlaybackAndRecordScenario(t *testing.T) {
+	vm, registry := registeredScenarios(t)
+	vm.strings[100], vm.strings[200] = "Guard", "routes/guard.rec"
+	npcID := callScenarioNative(t, vm, "NPC_Create", 100)
+	recordID := callScenarioNative(t, vm, "NPC_LoadRecord", 200)
+
+	if started := callScenarioNative(t, vm, "NPC_StartPlaybackEx", npcID, recordID); started != 1 {
+		t.Fatalf("NPC_StartPlaybackEx returned %d", started)
+	}
+
+	if playing := callScenarioNative(t, vm, "NPC_IsPlayingPlayback", npcID); playing != 1 {
+		t.Fatalf("NPC_IsPlayingPlayback = %d", playing)
+	}
+
+	if paused := callScenarioNative(t, vm, "NPC_PausePlayback", npcID, 1); paused != 1 {
+		t.Fatalf("NPC_PausePlayback returned %d", paused)
+	}
+
+	state := npcScenarioState(t, registry)
+	if state.records[int(recordID)] != "routes/guard.rec" || !state.npcs[int(npcID)].pausedPlayback {
+		t.Fatalf("unexpected playback state: %#v", state.npcs[int(npcID)])
+	}
+}
+
+func TestNPCPathScenarioStoresPoints(t *testing.T) {
+	vm, registry := registeredScenarios(t)
+	vm.strings[100] = "Guard"
+	npcID := callScenarioNative(t, vm, "NPC_Create", 100)
+	pathID := callScenarioNative(t, vm, "NPC_CreatePath")
+	callScenarioNative(t, vm, "NPC_AddPointToPath", pathID, floatCell(10), floatCell(20), floatCell(30), floatCell(0.5))
+	callScenarioNative(t, vm, "NPC_AddPointToPath", pathID, floatCell(40), floatCell(50), floatCell(60), floatCell(1))
+
+	if count := callScenarioNative(t, vm, "NPC_GetPathPointCount", pathID); count != 2 {
+		t.Fatalf("NPC_GetPathPointCount = %d", count)
+	}
+
+	if moved := callScenarioNative(t, vm, "NPC_MoveByPath", npcID, pathID); moved != 1 {
+		t.Fatalf("NPC_MoveByPath returned %d", moved)
+	}
+
+	npc := npcScenarioState(t, registry).npcs[int(npcID)]
+	if npc.currentPath != int(pathID) || npc.moveTarget != [3]float32{10, 20, 30} {
+		t.Fatalf("unexpected path movement: %#v", npc)
+	}
+}
+
+func TestNPCNodeScenarioTracksPlayback(t *testing.T) {
+	vm, _ := registeredScenarios(t)
+	vm.strings[100] = "Guard"
+	npcID := callScenarioNative(t, vm, "NPC_Create", 100)
+	callScenarioNative(t, vm, "NPC_OpenNode", 5)
+
+	if played := callScenarioNative(t, vm, "NPC_PlayNode", npcID, 5); played != 1 {
+		t.Fatalf("NPC_PlayNode returned %d", played)
+	}
+
+	if paused := callScenarioNative(t, vm, "NPC_PausePlayingNode", npcID); paused != 1 {
+		t.Fatalf("NPC_PausePlayingNode returned %d", paused)
+	}
+
+	if result := callScenarioNative(t, vm, "NPC_IsPlayingNodePaused", npcID); result != 1 {
+		t.Fatalf("NPC_IsPlayingNodePaused = %d", result)
+	}
+}
+
+func TestNPCNavigationCloneIsolatesPaths(t *testing.T) {
+	state := newNPCState()
+	state.paths[0] = &npcPath{points: []npcPathPoint{{position: [3]float32{1, 2, 3}}}}
+	state.records[0] = "record.rec"
+	state.nodes[0] = &npcNode{open: true}
+
+	clone, ok := state.Clone().(*npcState)
+	if !ok {
+		t.Fatal("cloned scenario was not NPC state")
+	}
+
+	clone.paths[0].points[0].position[0] = 99
+	clone.records[0] = "changed.rec"
+	clone.nodes[0].open = false
+
+	if state.paths[0].points[0].position[0] != 1 || state.records[0] != "record.rec" || !state.nodes[0].open {
+		t.Fatal("NPC navigation clone shared mutable state")
+	}
+}
+
 func npcScenarioState(t *testing.T, registry *scenarioRegistry) *npcState {
 	t.Helper()
 

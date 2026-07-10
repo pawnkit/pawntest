@@ -151,3 +151,38 @@ func (state *npcState) assertAnimation(result *nativeState) backend.NativeFunc {
 		return 1, nil
 	}
 }
+
+func (state *npcState) assertPlayback(result *nativeState) backend.NativeFunc {
+	return func(ctx backend.NativeContext, params []backend.Cell) (backend.Cell, error) {
+		if len(params) < 4 {
+			return 0, errors.New("NPC playback assertion expects 4 arguments")
+		}
+
+		npc, ok := state.npc(params)
+		actual := ok && npc.playingPlayback
+
+		expected := params[1] != 0
+		if actual != expected {
+			setFailure(result, params, 2, fmt.Sprintf("NPC %d playback: expected %t, got %t", params[0], expected, actual), ctx)
+			return 0, nil
+		}
+
+		return 1, nil
+	}
+}
+
+func (state *npcState) assertNavigationCount(result *nativeState, label string, value func() int) backend.NativeFunc {
+	return func(ctx backend.NativeContext, params []backend.Cell) (backend.Cell, error) {
+		if len(params) < 3 {
+			return 0, errors.New("NPC navigation count assertion expects 3 arguments")
+		}
+
+		actual := value()
+		if actual != int(params[0]) {
+			setFailure(result, params, 1, fmt.Sprintf("NPC %s: expected %d, got %d", label, params[0], actual), ctx)
+			return 0, nil
+		}
+
+		return 1, nil
+	}
+}
