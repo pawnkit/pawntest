@@ -363,6 +363,15 @@ public __pawntest_marker()
 #define ASSERT_DATABASE_RESULTS(%0) \
     if (!__pt_database_results((%0), __file, __line)) return 0
 
+#define MOCK_HTTP_RESPONSE(%0,%1,%2) \
+    __pt_http_response((%0), (%1), (%2))
+
+#define ASSERT_HTTP_REQUESTS(%0) \
+    if (!__pt_http_requests((%0), __file, __line)) return 0
+
+#define ASSERT_HTTP_REQUEST(%0,%1,%2) \
+    if (!__pt_http_request((%0), (%1), (%2), __file, __line)) return 0
+
 #define ASSERT(%0) \
     if (!__pawntest_assert((%0), #%0, __file, __line)) return 0
 

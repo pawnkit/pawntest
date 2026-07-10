@@ -125,6 +125,9 @@ linters:
           - nilerr
           - wsl_v5
         path: internal/runner/openmp_database.*\.go
+      - linters:
+          - wsl_v5
+        path: internal/runner/openmp_http.*\.go
 
   settings:
     dupl:

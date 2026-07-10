@@ -451,3 +451,22 @@ TEST(stores_player)
 ```
 
 Modern and legacy database native names are supported.
+
+## HTTP scenarios
+
+Configure responses before calling `HTTP`:
+
+```pawn
+forward OnProfile(index, response_code, data[]);
+
+TEST(loads_profile)
+{
+    MOCK_HTTP_RESPONSE("api.example.test/profile", 200, "{\"name\":\"Alice\"}");
+
+    ASSERT_TRUE(HTTP(7, HTTP_GET, "api.example.test/profile", "", "OnProfile"));
+    ASSERT_HTTP_REQUESTS(1);
+    ASSERT_HTTP_REQUEST(HTTP_GET, "api.example.test/profile", "");
+}
+```
+
+Responses are queued by URL and callbacks run immediately. Unconfigured requests return `0`.
