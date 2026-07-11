@@ -1,6 +1,10 @@
 package runner
 
-import "github.com/pawnkit/pawntest/internal/backend"
+import (
+	"errors"
+
+	"github.com/pawnkit/pawntest/internal/backend"
+)
 
 type executionContext struct {
 	state        *nativeState
@@ -76,7 +80,12 @@ type scenarioRegistry struct {
 }
 
 func newScenarioRegistry() *scenarioRegistry {
-	return &scenarioRegistry{modules: []scenarioModule{newOpenMPState(), newVehicleState(), newObjectState(), newActorState(), newPickupState(), newCheckpointState(), newTextLabelState(), newTextDrawState(), newGangZoneState(), newDialogState(), newMenuState(), newClassState(), newVariableState(), newServerState(), newNPCState(), newDatabaseState(), newHTTPState()}}
+	return &scenarioRegistry{modules: []scenarioModule{
+		newOpenMPState(), newVehicleState(), newObjectState(), newActorState(),
+		newPickupState(), newCheckpointState(), newTextLabelState(), newTextDrawState(),
+		newGangZoneState(), newDialogState(), newMenuState(), newClassState(),
+		newVariableState(), newServerState(), newNPCState(), newDatabaseState(), newHTTPState(),
+	}}
 }
 
 func (registry *scenarioRegistry) actorState() *actorState {
@@ -149,6 +158,19 @@ func (registry *scenarioRegistry) Clone() *scenarioRegistry {
 	}
 
 	return clone
+}
+
+func (registry *scenarioRegistry) Close() error {
+	var closeErrors []error
+
+	for _, module := range registry.modules {
+		closer, ok := module.(interface{ Close() error })
+		if ok {
+			closeErrors = append(closeErrors, closer.Close())
+		}
+	}
+
+	return errors.Join(closeErrors...)
 }
 
 func newExecutionContext(snapshots *snapshotStore, scenarios *scenarioRegistry, runner Runner) *executionContext {

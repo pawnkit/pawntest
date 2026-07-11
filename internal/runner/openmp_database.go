@@ -2,6 +2,7 @@ package runner
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"strconv"
 
@@ -28,6 +29,17 @@ func newDatabaseState() *databaseState {
 
 func (state *databaseState) Clone() scenarioModule {
 	return newDatabaseState()
+}
+
+func (state *databaseState) Close() error {
+	var closeErrors []error
+	for id, database := range state.connections {
+		closeErrors = append(closeErrors, database.Close())
+		delete(state.connections, id)
+	}
+	clear(state.results)
+
+	return errors.Join(closeErrors...)
 }
 
 func (state *databaseState) Register(vm backend.VM, context *executionContext) error {
@@ -75,6 +87,7 @@ func (state *databaseState) openDatabase(ctx backend.NativeContext, params []bac
 	if err != nil {
 		return 0, nil
 	}
+	database.SetMaxOpenConns(1)
 	if err := database.Ping(); err != nil {
 		_ = database.Close()
 

@@ -60,3 +60,22 @@ func TestDatabaseScenarioExecutesSQLiteQueries(t *testing.T) {
 		t.Fatalf("connection count = %d, want 0", count)
 	}
 }
+
+func TestDatabaseScenarioCloseReleasesResources(t *testing.T) {
+	vm, registry := registeredScenarios(t)
+	vm.strings[100] = ":memory:"
+	if database := callScenarioNative(t, vm, "DB_Open", 100); database == 0 {
+		t.Fatal("DB_Open failed")
+	}
+
+	state, ok := registry.modules[15].(*databaseState)
+	if !ok {
+		t.Fatal("scenario registry did not contain database state")
+	}
+	if err := state.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if len(state.connections) != 0 || len(state.results) != 0 {
+		t.Fatal("database resources were not cleared")
+	}
+}

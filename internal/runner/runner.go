@@ -88,6 +88,8 @@ func (r Runner) RunFile(path string) (Suite, error) {
 		scenarios: newScenarioRegistry(),
 		path:      path,
 	}
+	defer sc.scenarios.Close()
+
 	suiteContext := newExecutionContext(sc.snapshots, sc.scenarios, r)
 	suite := Suite{}
 
@@ -201,6 +203,7 @@ func (r Runner) runTest(vm backend.VM, run testRun, sc suiteRunContext) (Result,
 	scenarios := sc.scenarios
 	if r.Isolation != "suite" {
 		scenarios = sc.scenarios.Clone()
+		defer scenarios.Close()
 	}
 
 	context := newExecutionContext(sc.snapshots, scenarios, r)

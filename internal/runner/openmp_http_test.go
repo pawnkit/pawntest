@@ -62,6 +62,27 @@ func TestHTTPScenarioCloneIsolatesResponses(t *testing.T) {
 	}
 }
 
+func TestHTTPScenarioRejectsUnknownMethod(t *testing.T) {
+	base := &mockVM{natives: map[string]backend.NativeFunc{}, strings: map[backend.Cell]string{
+		100: "example.test", 200: "body", 300: "", 400: "OnHTTPResponse",
+	}}
+	vm := &dialogMockVM{mockVM: base}
+	registry := newScenarioRegistry()
+	context := &executionContext{state: &nativeState{status: Pass}, mocks: newMockState(), scenarios: registry}
+	if err := registry.Register(vm, context); err != nil {
+		t.Fatal(err)
+	}
+
+	callScenarioNative(t, base, "__pt_http_response", 100, 200, 200)
+	result, err := base.natives["HTTP"](vm, []backend.Cell{7, 99, 100, 300, 400})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result != 0 || len(httpScenarioState(t, registry).requests) != 0 {
+		t.Fatal("invalid HTTP method was accepted")
+	}
+}
+
 func httpScenarioState(t *testing.T, registry *scenarioRegistry) *httpState {
 	t.Helper()
 

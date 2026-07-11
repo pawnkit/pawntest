@@ -24,6 +24,12 @@ type httpState struct {
 	requests  []httpRequest
 }
 
+const (
+	httpGet  backend.Cell = 1
+	httpPost backend.Cell = 2
+	httpHead backend.Cell = 3
+)
+
 func newHTTPState() *httpState {
 	return &httpState{responses: map[string][]httpResponse{}}
 }
@@ -90,6 +96,9 @@ func (state *httpState) request(ctx backend.NativeContext, params []backend.Cell
 	if len(params) < 5 {
 		return 0, nil
 	}
+	if params[1] < httpGet || params[1] > httpHead {
+		return 0, nil
+	}
 	url, err := ctx.ReadString(params[2])
 	if err != nil {
 		return 0, err
@@ -110,6 +119,9 @@ func (state *httpState) request(ctx backend.NativeContext, params []backend.Cell
 	}
 	response := responses[0]
 	state.responses[url] = responses[1:]
+	if params[1] == httpHead {
+		response.bodyAddress = params[3]
+	}
 	caller, ok := ctx.(backend.PublicCaller)
 	if !ok {
 		return 0, errors.New("runtime does not support HTTP callbacks")
