@@ -92,5 +92,6 @@ native __pt_npc_record_count(expected, const file[], line);
 native __pt_database_connections(expected, const file[], line);
 native __pt_database_results(expected, const file[], line);
 native __pt_http_response(const url[], responseCode, const body[]);
+native __pt_http_method_response(method, const url[], responseCode, const body[]);
 native __pt_http_requests(expected, const file[], line);
 native __pt_http_request(method, const url[], const data[], const file[], line);

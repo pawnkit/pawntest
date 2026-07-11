@@ -461,7 +461,7 @@ forward OnProfile(index, response_code, data[]);
 
 TEST(loads_profile)
 {
-    MOCK_HTTP_RESPONSE("api.example.test/profile", 200, "{\"name\":\"Alice\"}");
+    MOCK_HTTP_RESPONSE_FOR(HTTP_GET, "api.example.test/profile", 200, "{\"name\":\"Alice\"}");
 
     ASSERT_TRUE(HTTP(7, HTTP_GET, "api.example.test/profile", "", "OnProfile"));
     ASSERT_HTTP_REQUESTS(1);
@@ -469,4 +469,4 @@ TEST(loads_profile)
 }
 ```
 
-Responses are queued by URL and callbacks run immediately. Unconfigured requests return `0`.
+Method-specific responses match before URL-only responses. Callbacks run immediately and unconfigured requests return `0`.

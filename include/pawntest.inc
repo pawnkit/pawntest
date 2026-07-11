@@ -366,6 +366,9 @@ public __pawntest_marker()
 #define MOCK_HTTP_RESPONSE(%0,%1,%2) \
     __pt_http_response((%0), (%1), (%2))
 
+#define MOCK_HTTP_RESPONSE_FOR(%0,%1,%2,%3) \
+    __pt_http_method_response((%0), (%1), (%2), (%3))
+
 #define ASSERT_HTTP_REQUESTS(%0) \
     if (!__pt_http_requests((%0), __file, __line)) return 0
 

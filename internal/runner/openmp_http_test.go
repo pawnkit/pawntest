@@ -48,17 +48,48 @@ func TestHTTPScenarioReturnsConfiguredResponse(t *testing.T) {
 
 func TestHTTPScenarioCloneIsolatesResponses(t *testing.T) {
 	state := newHTTPState()
-	state.responses["example.test"] = []httpResponse{{code: 200, bodyAddress: 100}}
+	key := httpResponseKey{url: "example.test"}
+	state.responses[key] = []httpResponse{{code: 200, bodyAddress: 100}}
 	state.requests = []httpRequest{{url: "example.test"}}
 
 	clone, ok := state.Clone().(*httpState)
 	if !ok {
 		t.Fatal("cloned scenario was not HTTP state")
 	}
-	clone.responses["example.test"][0].code = 404
+	clone.responses[key][0].code = 404
 	clone.requests[0].url = "changed.test"
-	if state.responses["example.test"][0].code != 200 || state.requests[0].url != "example.test" {
+	if state.responses[key][0].code != 200 || state.requests[0].url != "example.test" {
 		t.Fatal("HTTP clone shared state")
+	}
+}
+
+func TestHTTPScenarioMatchesMethodBeforeWildcard(t *testing.T) {
+	base := &mockVM{natives: map[string]backend.NativeFunc{}, strings: map[backend.Cell]string{
+		100: "api.example.test/items", 200: "wildcard", 201: "post", 300: "", 400: "OnHTTPResponse",
+	}}
+	vm := &dialogMockVM{mockVM: base}
+	registry := newScenarioRegistry()
+	context := &executionContext{state: &nativeState{status: Pass}, mocks: newMockState(), scenarios: registry}
+	if err := registry.Register(vm, context); err != nil {
+		t.Fatal(err)
+	}
+
+	callScenarioNative(t, base, "__pt_http_response", 100, 200, 200)
+	callScenarioNative(t, base, "__pt_http_method_response", httpPost, 100, 201, 201)
+	post, err := base.natives["HTTP"](vm, []backend.Cell{1, httpPost, 100, 300, 400})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if post != 1 || !slices.Equal(vm.args, []backend.Cell{1, 201, 201}) {
+		t.Fatalf("POST callback args = %v", vm.args)
+	}
+
+	get, err := base.natives["HTTP"](vm, []backend.Cell{2, httpGet, 100, 300, 400})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if get != 1 || !slices.Equal(vm.args, []backend.Cell{2, 200, 200}) {
+		t.Fatalf("GET callback args = %v", vm.args)
 	}
 }
 

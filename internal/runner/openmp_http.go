@@ -19,8 +19,13 @@ type httpRequest struct {
 	data   string
 }
 
+type httpResponseKey struct {
+	method backend.Cell
+	url    string
+}
+
 type httpState struct {
-	responses map[string][]httpResponse
+	responses map[httpResponseKey][]httpResponse
 	requests  []httpRequest
 }
 
@@ -31,13 +36,13 @@ const (
 )
 
 func newHTTPState() *httpState {
-	return &httpState{responses: map[string][]httpResponse{}}
+	return &httpState{responses: map[httpResponseKey][]httpResponse{}}
 }
 
 func (state *httpState) Clone() scenarioModule {
 	clone := newHTTPState()
-	for url, responses := range state.responses {
-		clone.responses[url] = append([]httpResponse(nil), responses...)
+	for key, responses := range state.responses {
+		clone.responses[key] = append([]httpResponse(nil), responses...)
 	}
 	clone.requests = append([]httpRequest(nil), state.requests...)
 
@@ -46,10 +51,11 @@ func (state *httpState) Clone() scenarioModule {
 
 func (state *httpState) Register(vm backend.VM, context *executionContext) error {
 	natives := map[string]backend.NativeFunc{
-		"HTTP":               state.request,
-		"__pt_http_response": state.addResponse,
-		"__pt_http_requests": state.assertRequestCount(context.state),
-		"__pt_http_request":  state.assertRequest(context.state),
+		"HTTP":                      state.request,
+		"__pt_http_response":        state.addResponse,
+		"__pt_http_method_response": state.addMethodResponse,
+		"__pt_http_requests":        state.assertRequestCount(context.state),
+		"__pt_http_request":         state.assertRequest(context.state),
 	}
 
 	return registerScenarioNatives(vm, natives, context.mocks, context.allowUnknown)
@@ -87,9 +93,29 @@ func (state *httpState) addResponse(ctx backend.NativeContext, params []backend.
 	if err != nil {
 		return 0, err
 	}
-	state.responses[url] = append(state.responses[url], httpResponse{code: params[1], bodyAddress: params[2]})
+	state.queueResponse(httpResponseKey{url: url}, params[1], params[2])
 
 	return 1, nil
+}
+
+func (state *httpState) addMethodResponse(ctx backend.NativeContext, params []backend.Cell) (backend.Cell, error) {
+	if len(params) < 4 {
+		return 0, errors.New("HTTP method response expects 4 arguments")
+	}
+	if params[0] < httpGet || params[0] > httpHead {
+		return 0, nil
+	}
+	url, err := ctx.ReadString(params[1])
+	if err != nil {
+		return 0, err
+	}
+	state.queueResponse(httpResponseKey{method: params[0], url: url}, params[2], params[3])
+
+	return 1, nil
+}
+
+func (state *httpState) queueResponse(key httpResponseKey, code, bodyAddress backend.Cell) {
+	state.responses[key] = append(state.responses[key], httpResponse{code: code, bodyAddress: bodyAddress})
 }
 
 func (state *httpState) request(ctx backend.NativeContext, params []backend.Cell) (backend.Cell, error) {
@@ -113,12 +139,12 @@ func (state *httpState) request(ctx backend.NativeContext, params []backend.Cell
 	}
 	state.requests = append(state.requests, httpRequest{index: params[0], method: params[1], url: url, data: data})
 
-	responses := state.responses[url]
+	key, responses := state.responseQueue(params[1], url)
 	if len(responses) == 0 {
 		return 0, nil
 	}
 	response := responses[0]
-	state.responses[url] = responses[1:]
+	state.responses[key] = responses[1:]
 	if params[1] == httpHead {
 		response.bodyAddress = params[3]
 	}
@@ -131,6 +157,17 @@ func (state *httpState) request(ctx backend.NativeContext, params []backend.Cell
 	}
 
 	return 1, nil
+}
+
+func (state *httpState) responseQueue(method backend.Cell, url string) (httpResponseKey, []httpResponse) {
+	key := httpResponseKey{method: method, url: url}
+	if responses := state.responses[key]; len(responses) != 0 {
+		return key, responses
+	}
+
+	key.method = 0
+
+	return key, state.responses[key]
 }
 
 func (state *httpState) assertRequestCount(result *nativeState) backend.NativeFunc {
