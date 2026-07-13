@@ -48,6 +48,7 @@ func (d DoctorCmd) doctor(w io.Writer, configPath string, explicitPawnCC bool) e
 	pawncc, source, pawnccErr := d.resolveDoctorPawnCC(cacheDir, explicitPawnCC)
 
 	version := "unavailable"
+
 	versionOK := false
 	if pawnccErr == nil {
 		version, versionOK = compilerVersion(pawncc)

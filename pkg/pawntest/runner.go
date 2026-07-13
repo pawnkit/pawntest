@@ -44,8 +44,10 @@ func (r Runner) List(path string) ([]Public, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	internal := r.internal()
 	internal.Providers = providers
+
 	publics, err := internal.List(amx)
 	if err != nil {
 		return nil, err
@@ -66,10 +68,12 @@ func (r Runner) RunFile(path string) (Suite, error) {
 	}
 
 	internal := r.internal()
+
 	providers, err := r.ensureProviders()
 	if err != nil {
 		return Suite{}, err
 	}
+
 	internal.Providers = providers
 	internal.SourcePath = path
 	internal.UpdateSnapshots = r.UpdateSnapshots
@@ -102,6 +106,7 @@ func (r Runner) ensureProviders() ([]string, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		providers = append(providers, amx)
 	}
 

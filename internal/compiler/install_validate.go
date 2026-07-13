@@ -54,7 +54,7 @@ func compilerValidationDetails(output, goos string) string {
 }
 
 func compilerRuntimeHint(goos string) string {
-	if goos != "linux" {
+	if goos != platformLinux {
 		return ""
 	}
 

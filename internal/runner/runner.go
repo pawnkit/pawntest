@@ -12,7 +12,10 @@ import (
 	"github.com/pawnkit/pawntest/internal/discovery"
 )
 
-const markerPublic = "__pawntest_marker"
+const (
+	markerPublic   = "__pawntest_marker"
+	isolationSuite = "suite"
+)
 
 var (
 	ErrMissingPawntestInclude = errors.New("missing pawntest include marker")
@@ -113,9 +116,10 @@ func (r Runner) RunFile(path string) (Suite, error) {
 		}
 	}
 
-	if snapshotter, ok := vm.(backend.MemorySnapshotter); ok && r.Isolation != "suite" {
+	if snapshotter, ok := vm.(backend.MemorySnapshotter); ok && r.Isolation != isolationSuite {
 		sc.baseline = snapshotter.SnapshotMemory()
 	}
+
 	providers.snapshot()
 
 	for _, run := range runs {
@@ -221,7 +225,7 @@ func (r Runner) runTest(vm backend.VM, run testRun, sc suiteRunContext) (Result,
 	}
 
 	scenarios := sc.scenarios
-	if r.Isolation != "suite" {
+	if r.Isolation != isolationSuite {
 		scenarios = sc.scenarios.Clone()
 		defer scenarios.Close()
 	}
@@ -266,7 +270,7 @@ func (r Runner) runTest(vm backend.VM, run testRun, sc suiteRunContext) (Result,
 		result = mergePhase(result, "mock verification", Result{Name: run.name, File: file, Line: line, Status: Fail, Message: message})
 	}
 
-	if context.strict && r.Isolation != "suite" {
+	if context.strict && r.Isolation != isolationSuite {
 		for _, message := range scenarios.StrictFailures() {
 			result = mergePhase(result, "strict scenarios", Result{Name: run.name, File: sc.path, Status: Fail, Message: message})
 		}

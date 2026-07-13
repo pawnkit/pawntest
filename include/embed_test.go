@@ -10,8 +10,10 @@ import (
 
 const pawnIdentifierLimit = 31
 
-var guardPattern = regexp.MustCompile(`^#(?:if defined|define)\s+([A-Za-z_][A-Za-z0-9_]*)$`)
-var nativePattern = regexp.MustCompile(`^native\s+(?:[A-Za-z_][A-Za-z0-9_]*:)?([A-Za-z_][A-Za-z0-9_]*)\s*\(`)
+var (
+	guardPattern  = regexp.MustCompile(`^#(?:if defined|define)\s+([A-Za-z_][A-Za-z0-9_]*)$`)
+	nativePattern = regexp.MustCompile(`^native\s+(?:[A-Za-z_][A-Za-z0-9_]*:)?([A-Za-z_][A-Za-z0-9_]*)\s*\(`)
+)
 
 func TestEmbeddedIncludesContainValidGuards(t *testing.T) {
 	embedded := Files()

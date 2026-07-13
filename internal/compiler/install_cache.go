@@ -68,7 +68,7 @@ func writeCompilerMarker(root, pawnccPath string) error {
 
 func findPawnCC(root string) (string, error) {
 	name := defaultPawnCC
-	if runtime.GOOS == "windows" {
+	if runtime.GOOS == platformWindows {
 		name += ".exe"
 	}
 
@@ -99,7 +99,7 @@ func findPawnCC(root string) (string, error) {
 		return "", errors.New("downloaded compiler archive did not contain pawncc")
 	}
 
-	if runtime.GOOS != "windows" {
+	if runtime.GOOS != platformWindows {
 		if err := os.Chmod(found, 0o755); err != nil {
 			return "", err
 		}

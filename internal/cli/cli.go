@@ -229,6 +229,7 @@ func (a TestCmd) execute(ctx context.Context, stdout, stderr io.Writer) error {
 	coverage := a.newCoverage()
 
 	r := a.newRunner(coverage)
+
 	r.Providers = providers
 	if a.List {
 		return a.listTests(ctx, stdout, files, r)
@@ -316,6 +317,7 @@ func (a TestCmd) ensureProviders(ctx context.Context) ([]string, error) {
 		if err != nil {
 			return nil, fmt.Errorf("compile provider %s: %w", path, err)
 		}
+
 		providers = append(providers, provider)
 	}
 

@@ -8,6 +8,12 @@ import (
 	"strings"
 )
 
+const (
+	platformWindows = "windows"
+	platformDarwin  = "darwin"
+	platformLinux   = "linux"
+)
+
 func fetchRelease(ctx context.Context, client *http.Client, url string) (releaseInfo, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
@@ -73,12 +79,12 @@ func selectAsset(assets []releaseAsset, goos, goarch string) (releaseAsset, erro
 
 func platformAssetNeedles(goos string) ([]string, error) {
 	switch goos {
-	case "windows":
-		return []string{"windows", "win32", "win64"}, nil
-	case "darwin":
-		return []string{"mac", "macos", "darwin"}, nil
-	case "linux":
-		return []string{"linux"}, nil
+	case platformWindows:
+		return []string{platformWindows, "win32", "win64"}, nil
+	case platformDarwin:
+		return []string{"mac", "macos", platformDarwin}, nil
+	case platformLinux:
+		return []string{platformLinux}, nil
 	default:
 		return nil, fmt.Errorf("%s: %w", goos, ErrNoCompilerAsset)
 	}

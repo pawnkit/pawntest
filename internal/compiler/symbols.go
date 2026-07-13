@@ -24,12 +24,14 @@ func validateGeneratedSymbols(path string) error {
 
 	for scanner.Scan() {
 		line++
+
 		match := generatedSymbolPattern.FindStringSubmatch(stripLineComment(scanner.Text()))
 		if match == nil {
 			continue
 		}
 
 		macro, name := match[1], match[2]
+
 		prefix, suffix := "test_", ""
 		if macro == "FIXTURE" {
 			prefix, suffix = "fixture_", "_teardown"
@@ -41,6 +43,7 @@ func validateGeneratedSymbols(path string) error {
 		}
 
 		maxName := pawnSymbolLimit - len(prefix) - len(suffix)
+
 		return fmt.Errorf(
 			"%s:%d: %s name %q generates Pawn symbol %q (%d characters); maximum source name length is %d",
 			path, line, macro, name, generated, len(generated), maxName,

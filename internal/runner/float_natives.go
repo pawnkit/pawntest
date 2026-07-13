@@ -8,6 +8,12 @@ import (
 	"github.com/pawnkit/pawntest/internal/backend"
 )
 
+const (
+	floatSin = "floatsin"
+	floatCos = "floatcos"
+	floatTan = "floattan"
+)
+
 var floatNativeNames = map[string]struct{}{
 	"float":       {},
 	"strfloat":    {},
@@ -21,9 +27,9 @@ var floatNativeNames = map[string]struct{}{
 	"floatsqroot": {},
 	"floatpower":  {},
 	"floatlog":    {},
-	"floatsin":    {},
-	"floatcos":    {},
-	"floattan":    {},
+	floatSin:      {},
+	floatCos:      {},
+	floatTan:      {},
 	"floatabs":    {},
 	"floatint":    {},
 }
@@ -123,7 +129,7 @@ func callFloatNative(name string, ctx backend.NativeContext, params []backend.Ce
 		}
 
 		return floatCell(math.Log(floatParam(0)) / math.Log(base)), nil
-	case "floatfract", "floatsqroot", "floatsin", "floatcos", "floattan", "floatabs":
+	case "floatfract", "floatsqroot", floatSin, floatCos, floatTan, "floatabs":
 		if err := require(1); err != nil {
 			return 0, err
 		}
@@ -135,7 +141,7 @@ func callFloatNative(name string, ctx backend.NativeContext, params []backend.Ce
 			_, value = math.Modf(value)
 		case "floatsqroot":
 			value = math.Sqrt(value)
-		case "floatsin", "floatcos", "floattan":
+		case floatSin, floatCos, floatTan:
 			mode := backend.Cell(0)
 			if len(params) > 1 {
 				mode = params[1]
@@ -149,15 +155,15 @@ func callFloatNative(name string, ctx backend.NativeContext, params []backend.Ce
 				value *= math.Pi / 200
 			}
 
-			if name == "floatsin" {
+			if name == floatSin {
 				value = math.Sin(value)
 			}
 
-			if name == "floatcos" {
+			if name == floatCos {
 				value = math.Cos(value)
 			}
 
-			if name == "floattan" {
+			if name == floatTan {
 				value = math.Tan(value)
 			}
 		case "floatabs":

@@ -27,6 +27,7 @@ func TestLoadConfig(t *testing.T) {
 	if len(cfg.Tests) != 1 || cfg.Tests[0] != "tests/..." {
 		t.Fatalf("tests = %#v, want tests/...", cfg.Tests)
 	}
+
 	if len(cfg.Providers) != 1 || cfg.Providers[0] != "inventory.provider.pwn" {
 		t.Fatalf("providers = %#v", cfg.Providers)
 	}

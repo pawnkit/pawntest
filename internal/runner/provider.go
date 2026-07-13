@@ -3,6 +3,7 @@ package runner
 import (
 	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/pawnkit/pawntest/internal/backend"
 )
@@ -41,6 +42,7 @@ type providerCall struct {
 
 func loadProviders(b backend.Backend, paths []string, maxInstructions int) (*providerSet, error) {
 	set := &providerSet{natives: map[string]*providerNative{}}
+
 	for _, path := range paths {
 		vm, err := b.LoadFile(path)
 		if err != nil {
@@ -61,6 +63,7 @@ func loadProviders(b backend.Backend, paths []string, maxInstructions int) (*pro
 		if err := provider.registerBridge(); err != nil {
 			return nil, errors.Join(fmt.Errorf("initialize provider %s: %w", path, err), set.Close())
 		}
+
 		if err := provider.lifecycle(providerInit); err != nil {
 			return nil, errors.Join(fmt.Errorf("initialize provider %s: %w", path, err), set.Close())
 		}
@@ -115,16 +118,20 @@ func (p *pawnProvider) registerNative(ctx backend.NativeContext, params []backen
 	if err != nil {
 		return 0, err
 	}
+
 	handler, err := ctx.ReadString(params[1])
 	if err != nil {
 		return 0, err
 	}
+
 	if name == "" || handler == "" {
 		return 0, errors.New("provider registration names cannot be empty")
 	}
+
 	if _, ok := p.publics[handler]; !ok {
 		return 0, fmt.Errorf("provider handler %q is not public", handler)
 	}
+
 	if existing, ok := p.registry.natives[name]; ok {
 		return 0, fmt.Errorf("native %q is already provided by %s", name, existing.provider.path)
 	}
@@ -155,6 +162,7 @@ func (p *pawnProvider) argCell(_ backend.NativeContext, params []backend.Cell) (
 	if err != nil {
 		return 0, err
 	}
+
 	if len(params) < 1 {
 		return 0, errors.New("provider cell input requires an index")
 	}
@@ -167,6 +175,7 @@ func (p *pawnProvider) argString(ctx backend.NativeContext, params []backend.Cel
 	if err != nil {
 		return 0, err
 	}
+
 	if len(params) < 3 {
 		return 0, errors.New("provider string argument requires index, output, and size")
 	}
@@ -175,10 +184,12 @@ func (p *pawnProvider) argString(ctx backend.NativeContext, params []backend.Cel
 	if err != nil {
 		return 0, err
 	}
+
 	value, err := call.consumer.ReadString(address)
 	if err != nil {
 		return 0, err
 	}
+
 	if err := ctx.WriteString(params[1], truncateString(value, int(params[2]))); err != nil {
 		return 0, err
 	}
@@ -191,6 +202,7 @@ func (p *pawnProvider) setCell(_ backend.NativeContext, params []backend.Cell) (
 	if err != nil {
 		return 0, err
 	}
+
 	if len(params) < 2 {
 		return 0, errors.New("provider cell output requires index and value")
 	}
@@ -199,6 +211,7 @@ func (p *pawnProvider) setCell(_ backend.NativeContext, params []backend.Cell) (
 	if err != nil {
 		return 0, err
 	}
+
 	if err := call.consumer.WriteCell(address, params[1]); err != nil {
 		return 0, err
 	}
@@ -211,9 +224,11 @@ func (p *pawnProvider) argArrayCell(_ backend.NativeContext, params []backend.Ce
 	if err != nil {
 		return 0, err
 	}
+
 	if len(params) < 2 {
 		return 0, errors.New("provider array input requires index and offset")
 	}
+
 	if params[1] < 0 {
 		return 0, errors.New("provider array offset cannot be negative")
 	}
@@ -231,9 +246,11 @@ func (p *pawnProvider) setArrayCell(_ backend.NativeContext, params []backend.Ce
 	if err != nil {
 		return 0, err
 	}
+
 	if len(params) < 3 {
 		return 0, errors.New("provider array output requires index, offset, and value")
 	}
+
 	if params[1] < 0 {
 		return 0, errors.New("provider array offset cannot be negative")
 	}
@@ -242,6 +259,7 @@ func (p *pawnProvider) setArrayCell(_ backend.NativeContext, params []backend.Ce
 	if err != nil {
 		return 0, err
 	}
+
 	if err := call.consumer.WriteCell(address+params[1]*4, params[2]); err != nil {
 		return 0, err
 	}
@@ -254,6 +272,7 @@ func (p *pawnProvider) setString(ctx backend.NativeContext, params []backend.Cel
 	if err != nil {
 		return 0, err
 	}
+
 	if len(params) < 3 {
 		return 0, errors.New("provider string output requires index, value, and size")
 	}
@@ -262,10 +281,12 @@ func (p *pawnProvider) setString(ctx backend.NativeContext, params []backend.Cel
 	if err != nil {
 		return 0, err
 	}
+
 	value, err := ctx.ReadString(params[1])
 	if err != nil {
 		return 0, err
 	}
+
 	if err := call.consumer.WriteString(address, truncateString(value, int(params[2]))); err != nil {
 		return 0, err
 	}
@@ -278,6 +299,7 @@ func (p *pawnProvider) callConsumer(ctx backend.NativeContext, params []backend.
 	if err != nil {
 		return 0, err
 	}
+
 	if len(params) < 1 {
 		return 0, errors.New("provider callback requires a public name")
 	}
@@ -286,6 +308,7 @@ func (p *pawnProvider) callConsumer(ctx backend.NativeContext, params []backend.
 	if err != nil {
 		return 0, err
 	}
+
 	caller, ok := call.consumer.(backend.PublicCaller)
 	if !ok {
 		return 0, errors.New("runtime does not support provider callbacks")
@@ -297,6 +320,7 @@ func (p *pawnProvider) callConsumer(ctx backend.NativeContext, params []backend.
 		if err != nil {
 			return 0, err
 		}
+
 		args[i] = value
 	}
 
@@ -307,12 +331,14 @@ func (p *pawnProvider) lifecycle(name string) error {
 	if _, ok := p.publics[name]; !ok {
 		return nil
 	}
+
 	caller, ok := p.vm.(backend.PublicCaller)
 	if !ok {
 		return errors.New("runtime does not support provider lifecycle callbacks")
 	}
 
 	_, err := caller.CallPublic(name)
+
 	return err
 }
 
@@ -323,6 +349,7 @@ func (p *pawnProvider) dispatch(ctx backend.NativeContext, params []backend.Cell
 	}
 
 	previous := p.active
+
 	p.active = &providerCall{consumer: ctx, params: params}
 	defer func() { p.active = previous }()
 
@@ -337,12 +364,14 @@ func (p *pawnProvider) dispatch(ctx backend.NativeContext, params []backend.Cell
 func (set *providerSet) Register(vm backend.VM, context *executionContext) error {
 	for name, provided := range set.natives {
 		providerNative := provided
+
 		registered := func(ctx backend.NativeContext, params []backend.Cell) (backend.Cell, error) {
 			if context.mocks.configured(name) {
 				return mockUnknownNative(name, context.mocks, context.allowUnknown)(ctx, params)
 			}
 
 			context.mocks.recordCall(name, ctx, params)
+
 			return providerNative.provider.dispatch(ctx, params, providerNative.handler)
 		}
 		if err := vm.RegisterNative(name, registered); err != nil {
@@ -363,15 +392,17 @@ func (set *providerSet) snapshot() {
 
 func (set *providerSet) beforeTest(isolation, _ string) error {
 	for _, provider := range set.providers {
-		if isolation != "suite" && provider.baseline != nil {
+		if isolation != isolationSuite && provider.baseline != nil {
 			snapshotter, ok := provider.vm.(backend.MemorySnapshotter)
 			if !ok {
 				return errors.New("provider runtime does not support memory snapshots")
 			}
+
 			if err := snapshotter.RestoreMemory(provider.baseline); err != nil {
 				return err
 			}
 		}
+
 		if err := provider.lifecycle(providerBefore); err != nil {
 			return fmt.Errorf("provider %s before test: %w", provider.path, err)
 		}
@@ -381,8 +412,8 @@ func (set *providerSet) beforeTest(isolation, _ string) error {
 }
 
 func (set *providerSet) afterTest(_ string) error {
-	for i := len(set.providers) - 1; i >= 0; i-- {
-		provider := set.providers[i]
+	for _, v := range slices.Backward(set.providers) {
+		provider := v
 		if err := provider.lifecycle(providerAfter); err != nil {
 			return fmt.Errorf("provider %s after test: %w", provider.path, err)
 		}
@@ -397,8 +428,9 @@ func (set *providerSet) Close() error {
 	}
 
 	var errs []error
-	for i := len(set.providers) - 1; i >= 0; i-- {
-		provider := set.providers[i]
+
+	for _, v := range slices.Backward(set.providers) {
+		provider := v
 		errs = append(errs, provider.lifecycle(providerShutdown), provider.vm.Close())
 	}
 
