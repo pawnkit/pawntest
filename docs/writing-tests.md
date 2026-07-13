@@ -170,6 +170,60 @@ TEST(welcomes_player)
 
 Other server or plugin natives require mocks or custom Go natives.
 
+## Player events
+
+Event helpers update scenario state and call the matching gamemode callback:
+
+```pawn
+TEST(player_join)
+{
+    new playerid = TEST_CONNECT_PLAYER("Alice");
+
+    TEST_SPAWN_PLAYER(playerid);
+    TEST_PLAYER_COMMAND(playerid, "/help");
+    TEST_PLAYER_KEYS(playerid, KEY_FIRE, 0, 0);
+
+    ASSERT_PLAYER_CONNECTED(playerid);
+}
+```
+
+Lifecycle helpers cover connect, spawn, death, and disconnect. Input helpers
+cover text, commands, and keys. Vehicle, pickup, checkpoint, race checkpoint,
+and textdraw helpers invoke their corresponding callbacks.
+
+Combat helpers apply deterministic damage and invoke damage callbacks:
+
+```pawn
+TEST(combat)
+{
+    new attackerid = TEST_CREATE_PLAYER("Attacker");
+    new victimid = TEST_CREATE_PLAYER("Victim");
+
+    TEST_DAMAGE_PLAYER(victimid, attackerid, 25.0, WEAPON_DEAGLE, BODY_PART_TORSO);
+}
+```
+
+Use `TEST_FINISH_OBJECT_MOVE` after `MoveObject` to apply its target and call
+`OnObjectMoved`. Explicit stream helpers model player, vehicle, and actor
+stream-in and stream-out transitions.
+
+Object movement also completes through virtual time:
+
+```pawn
+new duration = MoveObject(objectid, 10.0, 0.0, 0.0, 2.0);
+TEST_ADVANCE_TIME(duration);
+```
+
+Use `TEST_MOVE_PLAYER` to test position-driven callbacks in one transition:
+
+```pawn
+SetPlayerCheckpoint(playerid, 50.0, 0.0, 0.0, 2.0);
+TEST_MOVE_PLAYER(playerid, 50.0, 0.0, 0.0);
+```
+
+It evaluates active checkpoints, race checkpoints, and gang zones enabled with
+`UseGangZoneCheck` or `UsePlayerGangZoneCheck`.
+
 ## Vehicle scenarios
 
 Create and inspect vehicles without a server:
@@ -187,6 +241,10 @@ TEST(vehicle_damage)
 ```
 
 The vehicle model tracks transforms, health, appearance, components, damage, trailers, parameters, respawns, and occupants.
+
+Use `TEST_VEHICLE_DAMAGE_STATUS` for panels, doors, lights, and tyres.
+`TEST_DAMAGE_VEHICLE` changes health and calls `OnVehicleDeath` when it reaches
+zero. `TEST_RESPAWN_VEHICLE` restores spawn state and calls `OnVehicleSpawn`.
 
 ## Object scenarios
 

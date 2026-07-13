@@ -29,6 +29,7 @@ type testObject struct {
 	targetPos, targetRot    [3]float32
 	drawDistance, moveSpeed float32
 	moving, noCamera        bool
+	moveID                  int64
 	attachment              objectAttachment
 	materials               map[int]objectMaterial
 }
@@ -39,6 +40,7 @@ type objectState struct {
 	playerNext    map[int]int
 	playerObjects map[int]map[int]*testObject
 	players       *openMPState
+	scheduler     *scheduler
 }
 
 func newObjectState() *objectState {
@@ -76,6 +78,7 @@ func cloneObject(object *testObject) *testObject {
 
 func (state *objectState) Register(vm backend.VM, context *executionContext) error {
 	state.players = context.scenarios.playerState()
+	state.scheduler = context.scheduler
 
 	return registerScenarioNatives(vm, state.natives(context.state), context.mocks, context.allowUnknown)
 }

@@ -226,11 +226,19 @@ func (state *openMPState) getPlayerState(_ backend.NativeContext, params []backe
 		return 0, nil
 	}
 
-	if player.spawned {
-		return 1, nil
+	if !player.spawned {
+		return 0, nil
 	}
 
-	return 0, nil
+	if player.vehicle >= 0 {
+		if player.seat == 0 {
+			return 2, nil
+		}
+
+		return 3, nil
+	}
+
+	return 1, nil
 }
 
 func (state *openMPState) falseForPlayer(_ backend.NativeContext, params []backend.Cell) (backend.Cell, error) {

@@ -98,6 +98,7 @@ type scenarioRegistry struct {
 	NPCs        *npcState
 	Database    *databaseState
 	HTTP        *httpState
+	Events      *eventState
 	modules     []scenarioModule
 }
 
@@ -107,6 +108,7 @@ func newScenarioRegistry() *scenarioRegistry {
 		Pickups: newPickupState(), Checkpoints: newCheckpointState(), TextLabels: newTextLabelState(), TextDraws: newTextDrawState(),
 		GangZones: newGangZoneState(), Dialogs: newDialogState(), Menus: newMenuState(), Classes: newClassState(),
 		Variables: newVariableState(), Server: newServerState(), NPCs: newNPCState(), Database: newDatabaseState(), HTTP: newHTTPState(),
+		Events: newEventState(),
 	}
 	registry.setModules()
 
@@ -168,7 +170,7 @@ func (registry *scenarioRegistry) Clone() *scenarioRegistry {
 		Menus: cloneScenario[*menuState](registry.Menus), Classes: cloneScenario[*classState](registry.Classes),
 		Variables: cloneScenario[*variableState](registry.Variables), Server: cloneScenario[*serverState](registry.Server),
 		NPCs: cloneScenario[*npcState](registry.NPCs), Database: cloneScenario[*databaseState](registry.Database),
-		HTTP: cloneScenario[*httpState](registry.HTTP),
+		HTTP: cloneScenario[*httpState](registry.HTTP), Events: cloneScenario[*eventState](registry.Events),
 	}
 	clone.setModules()
 
@@ -180,7 +182,7 @@ func (registry *scenarioRegistry) setModules() {
 		registry.Players, registry.Vehicles, registry.Objects, registry.Actors,
 		registry.Pickups, registry.Checkpoints, registry.TextLabels, registry.TextDraws,
 		registry.GangZones, registry.Dialogs, registry.Menus, registry.Classes,
-		registry.Variables, registry.Server, registry.NPCs, registry.Database, registry.HTTP,
+		registry.Variables, registry.Server, registry.NPCs, registry.Database, registry.HTTP, registry.Events,
 	}
 }
 

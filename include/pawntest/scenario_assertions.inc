@@ -20,3 +20,4 @@
 #include <pawntest/scenarios/npc>
 #include <pawntest/scenarios/database>
 #include <pawntest/scenarios/http>
+#include <pawntest/scenarios/event>

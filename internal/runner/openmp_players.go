@@ -94,12 +94,16 @@ func (state *openMPState) createPlayer(ctx backend.NativeContext, params []backe
 		return -1, err
 	}
 
+	return state.addPlayer(name, true), nil
+}
+
+func (state *openMPState) addPlayer(name string, spawned bool) backend.Cell {
 	id := state.nextPlayer
 	state.nextPlayer++
 	state.players[id] = &testPlayer{
 		name:         name,
 		connected:    true,
-		spawned:      true,
+		spawned:      spawned,
 		controllable: true,
 		health:       100,
 		gravity:      0.008,
@@ -108,7 +112,7 @@ func (state *openMPState) createPlayer(ctx backend.NativeContext, params []backe
 		seat:         -1,
 	}
 
-	return backend.Cell(id), nil
+	return backend.Cell(id)
 }
 
 func (state *openMPState) player(id backend.Cell) (*testPlayer, bool) {

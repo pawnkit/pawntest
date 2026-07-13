@@ -137,11 +137,16 @@ func (state *objectState) movePlayerObject(_ backend.NativeContext, params []bac
 	object.moveSpeed = cellFloat(params[5])
 
 	object.moving = true
+
+	object.moveID++
 	if len(params) >= 9 {
 		object.targetRot = cellsToVector(params[6:9])
 	}
 
-	return objectMoveDuration(object), nil
+	duration := objectMoveDuration(object)
+	state.schedulePlayerObjectMove(int(params[0]), int(params[1]), object, duration)
+
+	return duration, nil
 }
 
 func (state *objectState) stopPlayerObject(_ backend.NativeContext, params []backend.Cell) (backend.Cell, error) {
@@ -151,8 +156,28 @@ func (state *objectState) stopPlayerObject(_ backend.NativeContext, params []bac
 	}
 
 	object.moving = false
+	object.moveID++
 
 	return 1, nil
+}
+
+func (state *objectState) schedulePlayerObjectMove(playerID, objectID int, object *testObject, duration backend.Cell) {
+	if state.scheduler == nil || duration <= 0 {
+		return
+	}
+
+	moveID := object.moveID
+
+	state.scheduler.schedule(int64(duration), "OnPlayerObjectMoved", []backend.Cell{backend.Cell(playerID), backend.Cell(objectID)}, func() bool {
+		current := state.playerObjects[playerID][objectID]
+		if current == nil || !current.moving || current.moveID != moveID {
+			return false
+		}
+
+		current.position, current.rotation, current.moving = current.targetPos, current.targetRot, false
+
+		return true
+	})
 }
 
 func (state *objectState) isPlayerObjectMoving(_ backend.NativeContext, params []backend.Cell) (backend.Cell, error) {

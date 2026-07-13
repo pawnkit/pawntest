@@ -52,11 +52,16 @@ func (state *objectState) moveObject(_ backend.NativeContext, params []backend.C
 	object.moveSpeed = cellFloat(params[4])
 
 	object.moving = true
+
+	object.moveID++
 	if len(params) >= 8 {
 		object.targetRot = cellsToVector(params[5:8])
 	}
 
-	return objectMoveDuration(object), nil
+	duration := objectMoveDuration(object)
+	state.scheduleObjectMove(int(params[0]), object, duration)
+
+	return duration, nil
 }
 
 func (state *objectState) stopObject(_ backend.NativeContext, params []backend.Cell) (backend.Cell, error) {
@@ -66,8 +71,28 @@ func (state *objectState) stopObject(_ backend.NativeContext, params []backend.C
 	}
 
 	object.moving = false
+	object.moveID++
 
 	return 1, nil
+}
+
+func (state *objectState) scheduleObjectMove(id int, object *testObject, duration backend.Cell) {
+	if state.scheduler == nil || duration <= 0 {
+		return
+	}
+
+	moveID := object.moveID
+
+	state.scheduler.schedule(int64(duration), "OnObjectMoved", []backend.Cell{backend.Cell(id)}, func() bool {
+		current := state.objects[id]
+		if current == nil || !current.moving || current.moveID != moveID {
+			return false
+		}
+
+		current.position, current.rotation, current.moving = current.targetPos, current.targetRot, false
+
+		return true
+	})
 }
 
 func (state *objectState) isObjectMoving(_ backend.NativeContext, params []backend.Cell) (backend.Cell, error) {

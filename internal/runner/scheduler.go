@@ -13,6 +13,8 @@ type scheduledCallback struct {
 	due      int64
 	sequence int64
 	name     string
+	args     []backend.Cell
+	before   func() bool
 }
 
 type scheduler struct {
@@ -50,14 +52,19 @@ func nativeSchedule(scheduler *scheduler) backend.NativeFunc {
 			return 0, err
 		}
 
-		scheduler.sequence++
-		scheduler.pending = append(scheduler.pending, scheduledCallback{
-			due: scheduler.now + int64(params[0]), sequence: scheduler.sequence, name: name,
-		})
-		scheduler.sort()
-
-		return backend.Cell(scheduler.sequence), nil
+		return backend.Cell(scheduler.schedule(int64(params[0]), name, nil, nil)), nil
 	}
+}
+
+func (scheduler *scheduler) schedule(delay int64, name string, args []backend.Cell, before func() bool) int64 {
+	scheduler.sequence++
+	scheduler.pending = append(scheduler.pending, scheduledCallback{
+		due: scheduler.now + delay, sequence: scheduler.sequence, name: name,
+		args: append([]backend.Cell(nil), args...), before: before,
+	})
+	scheduler.sort()
+
+	return scheduler.sequence
 }
 
 func nativeAdvanceTime(scheduler *scheduler) backend.NativeFunc {
@@ -104,7 +111,11 @@ func (scheduler *scheduler) runDue(ctx backend.NativeContext) error {
 		callback := scheduler.pending[0]
 		scheduler.pending = scheduler.pending[1:]
 
-		if _, err := caller.CallPublic(callback.name); err != nil {
+		if callback.before != nil && !callback.before() {
+			continue
+		}
+
+		if _, err := caller.CallPublic(callback.name, callback.args...); err != nil {
 			return fmt.Errorf("scheduled callback %s: %w", callback.name, err)
 		}
 	}
