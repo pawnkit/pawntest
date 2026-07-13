@@ -67,6 +67,8 @@ jobs:
           CGO_ENABLED: "1"
       - run: go build ./cmd/pawntest
       - name: Test compiler installer against GitHub release
+        # openmultiplayer does not currently publish a macOS compiler asset.
+        if: matrix.os != 'macos-latest'
         run: go test ./internal/compiler -run TestInstallOpenMPCompilerIntegration -count=1 -v
         env:
           PAWNTEST_INSTALL_INTEGRATION: "1"

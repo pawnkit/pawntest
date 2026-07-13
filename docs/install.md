@@ -19,6 +19,9 @@ Supported release targets:
 The official Linux Pawn compiler requires `libc6-i386` on Debian/Ubuntu or
 `lib32-glibc` on Arch. Precompiled AMX tests do not require `pawncc`.
 
+Pawntest can use a compatible macOS `pawncc` supplied through configuration or
+by sampctl. Automatic installation requires a matching upstream release asset.
+
 Build from source with the Go version declared in `go.mod`:
 
 ```sh
