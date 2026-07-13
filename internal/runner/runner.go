@@ -83,6 +83,10 @@ func (r Runner) RunFile(path string) (suite Suite, returnErr error) {
 		return Suite{}, err
 	}
 
+	if len(tests) == 0 {
+		return Suite{}, ErrNoTestsFound
+	}
+
 	if limiter, ok := vm.(backend.InstructionLimiter); ok && r.MaxInstructions > 0 {
 		limiter.SetInstructionLimit(r.MaxInstructions)
 	}

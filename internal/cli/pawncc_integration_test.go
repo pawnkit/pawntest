@@ -127,6 +127,18 @@ func TestPawnCCIntegrationListsAndRunsCompiledSource(t *testing.T) {
 		t.Fatalf("tag run exit=%d stderr=%q stdout=%q", code, tagErr.String(), tagOut.String())
 	}
 
+	var multiTagOut, multiTagErr bytes.Buffer
+	code = Run([]string{
+		"--pawncc", pawncc,
+		"--cache-dir", cacheDir,
+		"--tags", "unit & !slow",
+		filepath.Join(testsDir, "passing.test.pwn"),
+		filepath.Join(testsDir, "cases.test.pwn"),
+	}, &multiTagOut, &multiTagErr)
+	if code != ExitOK || !strings.Contains(multiTagOut.String(), "PASS  test_even_two") {
+		t.Fatalf("multi-file tag run exit=%d stderr=%q stdout=%q", code, multiTagErr.String(), multiTagOut.String())
+	}
+
 	coveragePath := filepath.Join(t.TempDir(), "coverage.lcov")
 	var coverageOut, coverageErr bytes.Buffer
 	code = Run([]string{

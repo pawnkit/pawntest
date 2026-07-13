@@ -1,0 +1,3 @@
+include = ["include"]
+tests = ["tests"]
+providers = ["provider/inventory.provider.pwn"]

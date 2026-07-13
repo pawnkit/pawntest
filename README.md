@@ -44,6 +44,7 @@ See [Configuration](docs/config.md) for all options.
 
 ## Documentation
 
+- [Runnable examples](examples/README.md)
 - [Usage](docs/usage.md)
 - [Installation](docs/install.md)
 - [Writing tests](docs/writing-tests.md)

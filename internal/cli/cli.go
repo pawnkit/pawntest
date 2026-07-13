@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -397,6 +398,15 @@ func (a TestCmd) listFileTests(ctx context.Context, file string, r runner.Runner
 	}
 
 	if len(expectations) > 0 {
+		selected, selectErr := a.diagnosticSelected(file)
+		if selectErr != nil {
+			return nil, selectErr
+		}
+
+		if !selected {
+			return nil, nil
+		}
+
 		return []string{diagnosticTestName(file)}, nil
 	}
 
@@ -557,8 +567,16 @@ func (a TestCmd) runFile(ctx context.Context, file string, r runner.Runner) (run
 	expectations, err := compiler.DiagnosticExpectations(file)
 
 	var suite runner.Suite
+
 	if err == nil && len(expectations) > 0 {
-		suite, err = a.runDiagnosticTest(ctx, file, expectations)
+		var selected bool
+
+		selected, err = a.diagnosticSelected(file)
+		if err == nil && !selected {
+			err = runner.ErrNoTestsFound
+		} else if err == nil {
+			suite, err = a.runDiagnosticTest(ctx, file, expectations)
+		}
 	} else if err == nil {
 		var amx string
 
@@ -570,7 +588,7 @@ func (a TestCmd) runFile(ctx context.Context, file string, r runner.Runner) (run
 		}
 	}
 
-	if a.AllowEmpty && errors.Is(err, runner.ErrNoTestsFound) {
+	if a.allowsEmptyFileSelection() && errors.Is(err, runner.ErrNoTestsFound) {
 		err = nil
 	}
 
@@ -579,6 +597,10 @@ func (a TestCmd) runFile(ctx context.Context, file string, r runner.Runner) (run
 	}
 
 	return suite, err
+}
+
+func (a TestCmd) allowsEmptyFileSelection() bool {
+	return a.AllowEmpty || a.Run != "" || a.Tags != ""
 }
 
 func (a TestCmd) runDiagnosticTest(ctx context.Context, path string, expectations []compiler.DiagnosticExpectation) (runner.Suite, error) {
@@ -604,6 +626,24 @@ func (a TestCmd) runDiagnosticTest(ctx context.Context, path string, expectation
 
 func diagnosticTestName(path string) string {
 	return "compile:" + strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))
+}
+
+func (a TestCmd) diagnosticSelected(path string) (bool, error) {
+	matchesTags, err := runner.MatchTags(a.Tags)
+	if err != nil || !matchesTags {
+		return false, err
+	}
+
+	if a.Run == "" {
+		return true, nil
+	}
+
+	expression, err := regexp.Compile(a.Run)
+	if err != nil {
+		return false, fmt.Errorf("invalid run regex: %w", err)
+	}
+
+	return expression.MatchString(diagnosticTestName(path)), nil
 }
 
 func (a *TestCmd) ensureCompilerAvailable(ctx context.Context, files []string, stderr io.Writer) error {

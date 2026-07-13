@@ -1,0 +1,6 @@
+include = ["include", "tests"]
+tests = ["tests"]
+providers = ["provider/inventory.provider.pwn"]
+format = "plain"
+isolation = "test"
+max_instructions = 1000000

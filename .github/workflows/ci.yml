@@ -91,6 +91,14 @@ jobs:
         env:
           PAWNTEST_PAWNCC: /tmp/pawnc-3.10.11-linux/bin/pawncc
           LD_LIBRARY_PATH: /tmp/pawnc-3.10.11-linux/lib
+      - name: Run examples
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          for example in basic gamemode mocks provider roleplay; do
+            (cd "examples/$example" && ../../pawntest --pawncc /tmp/pawnc-3.10.11-linux/bin/pawncc)
+          done
+        env:
+          LD_LIBRARY_PATH: /tmp/pawnc-3.10.11-linux/lib
 
   release-check:
     runs-on: ubuntu-latest

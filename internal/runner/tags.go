@@ -103,6 +103,21 @@ func (expression *tagExpression) matches(tags map[string]bool) bool {
 	return value
 }
 
+// MatchTags reports whether tags satisfy an expression.
+func MatchTags(input string, tags ...string) (bool, error) {
+	expression, err := parseTagExpression(input)
+	if err != nil {
+		return false, err
+	}
+
+	values := make(map[string]bool, len(tags))
+	for _, tag := range tags {
+		values[tag] = true
+	}
+
+	return expression.matches(values), nil
+}
+
 func (expression *tagExpression) parseOr(tags map[string]bool) (bool, error) {
 	value, err := expression.parseAnd(tags)
 	for err == nil && expression.peek() == "|" {
