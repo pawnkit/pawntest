@@ -101,10 +101,5 @@ func TestActorScenarioCloneIsolatesState(t *testing.T) {
 func actorScenarioState(t *testing.T, registry *scenarioRegistry) *actorState {
 	t.Helper()
 
-	state, ok := registry.modules[3].(*actorState)
-	if !ok {
-		t.Fatal("scenario registry did not contain actor state")
-	}
-
-	return state
+	return registry.Actors
 }

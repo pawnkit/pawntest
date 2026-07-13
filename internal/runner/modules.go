@@ -76,26 +76,40 @@ type scenarioModule interface {
 }
 
 type scenarioRegistry struct {
-	modules []scenarioModule
+	Players     *openMPState
+	Vehicles    *vehicleState
+	Objects     *objectState
+	Actors      *actorState
+	Pickups     *pickupState
+	Checkpoints *checkpointState
+	TextLabels  *textLabelState
+	TextDraws   *textDrawState
+	GangZones   *gangZoneState
+	Dialogs     *dialogState
+	Menus       *menuState
+	Classes     *classState
+	Variables   *variableState
+	Server      *serverState
+	NPCs        *npcState
+	Database    *databaseState
+	HTTP        *httpState
+	modules     []scenarioModule
 }
 
 func newScenarioRegistry() *scenarioRegistry {
-	return &scenarioRegistry{modules: []scenarioModule{
-		newOpenMPState(), newVehicleState(), newObjectState(), newActorState(),
-		newPickupState(), newCheckpointState(), newTextLabelState(), newTextDrawState(),
-		newGangZoneState(), newDialogState(), newMenuState(), newClassState(),
-		newVariableState(), newServerState(), newNPCState(), newDatabaseState(), newHTTPState(),
-	}}
+	registry := &scenarioRegistry{
+		Players: newOpenMPState(), Vehicles: newVehicleState(), Objects: newObjectState(), Actors: newActorState(),
+		Pickups: newPickupState(), Checkpoints: newCheckpointState(), TextLabels: newTextLabelState(), TextDraws: newTextDrawState(),
+		GangZones: newGangZoneState(), Dialogs: newDialogState(), Menus: newMenuState(), Classes: newClassState(),
+		Variables: newVariableState(), Server: newServerState(), NPCs: newNPCState(), Database: newDatabaseState(), HTTP: newHTTPState(),
+	}
+	registry.setModules()
+
+	return registry
 }
 
 func (registry *scenarioRegistry) actorState() *actorState {
-	for _, module := range registry.modules {
-		if state, ok := module.(*actorState); ok {
-			return state
-		}
-	}
-
-	return nil
+	return registry.Actors
 }
 
 func registerScenarioNatives(vm backend.VM, natives map[string]backend.NativeFunc, mocks *mockState, allowUnknown bool) error {
@@ -122,23 +136,11 @@ func registerScenarioNatives(vm backend.VM, natives map[string]backend.NativeFun
 }
 
 func (registry *scenarioRegistry) playerState() *openMPState {
-	for _, module := range registry.modules {
-		if state, ok := module.(*openMPState); ok {
-			return state
-		}
-	}
-
-	return nil
+	return registry.Players
 }
 
 func (registry *scenarioRegistry) vehicleState() *vehicleState {
-	for _, module := range registry.modules {
-		if state, ok := module.(*vehicleState); ok {
-			return state
-		}
-	}
-
-	return nil
+	return registry.Vehicles
 }
 
 func (registry *scenarioRegistry) Register(vm backend.VM, context *executionContext) error {
@@ -152,9 +154,35 @@ func (registry *scenarioRegistry) Register(vm backend.VM, context *executionCont
 }
 
 func (registry *scenarioRegistry) Clone() *scenarioRegistry {
-	clone := &scenarioRegistry{modules: make([]scenarioModule, 0, len(registry.modules))}
-	for _, module := range registry.modules {
-		clone.modules = append(clone.modules, module.Clone())
+	clone := &scenarioRegistry{
+		Players: registry.Players.clone(), Vehicles: cloneScenario[*vehicleState](registry.Vehicles),
+		Objects: cloneScenario[*objectState](registry.Objects), Actors: cloneScenario[*actorState](registry.Actors),
+		Pickups: cloneScenario[*pickupState](registry.Pickups), Checkpoints: cloneScenario[*checkpointState](registry.Checkpoints),
+		TextLabels: cloneScenario[*textLabelState](registry.TextLabels), TextDraws: cloneScenario[*textDrawState](registry.TextDraws),
+		GangZones: cloneScenario[*gangZoneState](registry.GangZones), Dialogs: cloneScenario[*dialogState](registry.Dialogs),
+		Menus: cloneScenario[*menuState](registry.Menus), Classes: cloneScenario[*classState](registry.Classes),
+		Variables: cloneScenario[*variableState](registry.Variables), Server: cloneScenario[*serverState](registry.Server),
+		NPCs: cloneScenario[*npcState](registry.NPCs), Database: cloneScenario[*databaseState](registry.Database),
+		HTTP: cloneScenario[*httpState](registry.HTTP),
+	}
+	clone.setModules()
+
+	return clone
+}
+
+func (registry *scenarioRegistry) setModules() {
+	registry.modules = []scenarioModule{
+		registry.Players, registry.Vehicles, registry.Objects, registry.Actors,
+		registry.Pickups, registry.Checkpoints, registry.TextLabels, registry.TextDraws,
+		registry.GangZones, registry.Dialogs, registry.Menus, registry.Classes,
+		registry.Variables, registry.Server, registry.NPCs, registry.Database, registry.HTTP,
+	}
+}
+
+func cloneScenario[T scenarioModule](module T) T {
+	clone, ok := module.Clone().(T)
+	if !ok {
+		panic("scenario clone returned a different module type")
 	}
 
 	return clone

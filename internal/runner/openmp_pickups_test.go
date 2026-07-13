@@ -104,10 +104,5 @@ func TestPickupScenarioCloneIsolatesState(t *testing.T) {
 func pickupScenarioState(t *testing.T, registry *scenarioRegistry) *pickupState {
 	t.Helper()
 
-	state, ok := registry.modules[4].(*pickupState)
-	if !ok {
-		t.Fatal("scenario registry did not contain pickup state")
-	}
-
-	return state
+	return registry.Pickups
 }

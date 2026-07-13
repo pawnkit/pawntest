@@ -7,22 +7,6 @@ import (
 	"github.com/pawnkit/pawntest/internal/backend"
 )
 
-func (state *classState) assertClassCount(result *nativeState) backend.NativeFunc {
-	return func(ctx backend.NativeContext, params []backend.Cell) (backend.Cell, error) {
-		if len(params) < 3 {
-			return 0, errors.New("class count assertion expects 3 arguments")
-		}
-
-		actual := len(state.classes)
-		if actual != int(params[0]) {
-			setFailure(result, params, 1, fmt.Sprintf("classes: expected %d, got %d", params[0], actual), ctx)
-			return 0, nil
-		}
-
-		return 1, nil
-	}
-}
-
 func (state *classState) assertPlayerClass(result *nativeState) backend.NativeFunc {
 	return func(ctx backend.NativeContext, params []backend.Cell) (backend.Cell, error) {
 		if len(params) < 4 {

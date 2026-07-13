@@ -63,14 +63,15 @@ func (state *httpState) Register(vm backend.VM, context *executionContext) error
 
 func (state *httpState) assertRequest(result *nativeState) backend.NativeFunc {
 	return func(ctx backend.NativeContext, params []backend.Cell) (backend.Cell, error) {
-		if len(params) < 5 {
-			return 0, errors.New("HTTP request assertion expects 5 arguments")
+		reader := readNativeParams(ctx, params)
+		if err := reader.Require(5, "HTTP request assertion"); err != nil {
+			return 0, err
 		}
-		url, err := ctx.ReadString(params[1])
+		url, err := reader.String(1)
 		if err != nil {
 			return 0, err
 		}
-		data, err := ctx.ReadString(params[2])
+		data, err := reader.String(2)
 		if err != nil {
 			return 0, err
 		}
@@ -86,10 +87,11 @@ func (state *httpState) assertRequest(result *nativeState) backend.NativeFunc {
 }
 
 func (state *httpState) addResponse(ctx backend.NativeContext, params []backend.Cell) (backend.Cell, error) {
-	if len(params) < 3 {
-		return 0, errors.New("HTTP response expects 3 arguments")
+	reader := readNativeParams(ctx, params)
+	if err := reader.Require(3, "HTTP response"); err != nil {
+		return 0, err
 	}
-	url, err := ctx.ReadString(params[0])
+	url, err := reader.String(0)
 	if err != nil {
 		return 0, err
 	}
@@ -99,13 +101,14 @@ func (state *httpState) addResponse(ctx backend.NativeContext, params []backend.
 }
 
 func (state *httpState) addMethodResponse(ctx backend.NativeContext, params []backend.Cell) (backend.Cell, error) {
-	if len(params) < 4 {
-		return 0, errors.New("HTTP method response expects 4 arguments")
+	reader := readNativeParams(ctx, params)
+	if err := reader.Require(4, "HTTP method response"); err != nil {
+		return 0, err
 	}
 	if params[0] < httpGet || params[0] > httpHead {
 		return 0, nil
 	}
-	url, err := ctx.ReadString(params[1])
+	url, err := reader.String(1)
 	if err != nil {
 		return 0, err
 	}
@@ -125,15 +128,16 @@ func (state *httpState) request(ctx backend.NativeContext, params []backend.Cell
 	if params[1] < httpGet || params[1] > httpHead {
 		return 0, nil
 	}
-	url, err := ctx.ReadString(params[2])
+	reader := readNativeParams(ctx, params)
+	url, err := reader.String(2)
 	if err != nil {
 		return 0, err
 	}
-	data, err := ctx.ReadString(params[3])
+	data, err := reader.String(3)
 	if err != nil {
 		return 0, err
 	}
-	callback, err := ctx.ReadString(params[4])
+	callback, err := reader.String(4)
 	if err != nil {
 		return 0, err
 	}
@@ -172,8 +176,8 @@ func (state *httpState) responseQueue(method backend.Cell, url string) (httpResp
 
 func (state *httpState) assertRequestCount(result *nativeState) backend.NativeFunc {
 	return func(ctx backend.NativeContext, params []backend.Cell) (backend.Cell, error) {
-		if len(params) < 3 {
-			return 0, errors.New("HTTP request count assertion expects 3 arguments")
+		if err := readNativeParams(ctx, params).Require(3, "HTTP request count assertion"); err != nil {
+			return 0, err
 		}
 		actual := len(state.requests)
 		if actual != int(params[0]) {

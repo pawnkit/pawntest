@@ -1,0 +1,39 @@
+package include
+
+import (
+	"bufio"
+	"bytes"
+	"regexp"
+	"strings"
+	"testing"
+)
+
+const pawnIdentifierLimit = 31
+
+var guardPattern = regexp.MustCompile(`^#(?:if defined|define)\s+([A-Za-z_][A-Za-z0-9_]*)$`)
+
+func TestEmbeddedIncludesContainValidGuards(t *testing.T) {
+	embedded := Files()
+	if len(embedded) < 20 {
+		t.Fatalf("embedded %d include files, want at least 20", len(embedded))
+	}
+
+	for path, data := range embedded {
+		scanner := bufio.NewScanner(bytes.NewReader(data))
+		for scanner.Scan() {
+			line := strings.TrimSpace(scanner.Text())
+			if strings.HasPrefix(line, "+#") {
+				t.Fatalf("%s contains a malformed directive: %s", path, line)
+			}
+
+			match := guardPattern.FindStringSubmatch(line)
+			if len(match) == 2 && len(match[1]) > pawnIdentifierLimit {
+				t.Fatalf("%s guard %q has %d characters", path, match[1], len(match[1]))
+			}
+		}
+
+		if err := scanner.Err(); err != nil {
+			t.Fatalf("scan %s: %v", path, err)
+		}
+	}
+}

@@ -110,10 +110,5 @@ func TestMenuScenarioCloneIsolatesState(t *testing.T) {
 func menuScenarioState(t *testing.T, registry *scenarioRegistry) *menuState {
 	t.Helper()
 
-	state, ok := registry.modules[10].(*menuState)
-	if !ok {
-		t.Fatal("scenario registry did not contain menu state")
-	}
-
-	return state
+	return registry.Menus
 }

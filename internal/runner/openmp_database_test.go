@@ -1,10 +1,13 @@
 package runner
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/pawnkit/pawntest/internal/backend"
 )
+
+var errStubRows = errors.New("stub rows are not implemented")
 
 func TestDatabaseScenarioExecutesSQLiteQueries(t *testing.T) {
 	vm, _ := registeredScenarios(t)
@@ -68,14 +71,52 @@ func TestDatabaseScenarioCloseReleasesResources(t *testing.T) {
 		t.Fatal("DB_Open failed")
 	}
 
-	state, ok := registry.modules[15].(*databaseState)
-	if !ok {
-		t.Fatal("scenario registry did not contain database state")
-	}
+	state := registry.Database
 	if err := state.Close(); err != nil {
 		t.Fatal(err)
 	}
 	if len(state.connections) != 0 || len(state.results) != 0 {
 		t.Fatal("database resources were not cleared")
 	}
+}
+
+func TestDatabaseScenarioAcceptsInjectedBackend(t *testing.T) {
+	connection := &stubDatabaseConnection{}
+	state := newDatabaseState()
+	state.open = func(name string) (databaseConnection, error) {
+		if name != "test.db" {
+			t.Fatalf("database name = %q", name)
+		}
+
+		return connection, nil
+	}
+	vm := &mockVM{strings: map[backend.Cell]string{100: "test.db"}}
+	handle, err := state.openDatabase(vm, []backend.Cell{100})
+	if err != nil || handle == 0 {
+		t.Fatalf("open result = %d, error = %v", handle, err)
+	}
+	if err := state.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if !connection.closed {
+		t.Fatal("injected database was not closed")
+	}
+}
+
+type stubDatabaseConnection struct {
+	closed bool
+}
+
+func (database *stubDatabaseConnection) Ping() error {
+	return nil
+}
+
+func (database *stubDatabaseConnection) Close() error {
+	database.closed = true
+
+	return nil
+}
+
+func (database *stubDatabaseConnection) Query(string) (databaseRows, error) {
+	return nil, errStubRows
 }

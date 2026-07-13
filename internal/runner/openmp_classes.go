@@ -49,7 +49,7 @@ func (state *classState) Register(vm backend.VM, context *executionContext) erro
 func (state *classState) natives(result *nativeState) map[string]backend.NativeFunc {
 	return map[string]backend.NativeFunc{
 		"__pt_class_select":           state.selectClass,
-		"__pt_class_count":            state.assertClassCount(result),
+		"__pt_class_count":            assertScenarioCount(result, "classes", func() int { return len(state.classes) }),
 		"__pt_player_class":           state.assertPlayerClass(result),
 		"__pt_player_selecting_class": state.assertSelecting(result),
 		"AddPlayerClass":              state.addPlayerClass,

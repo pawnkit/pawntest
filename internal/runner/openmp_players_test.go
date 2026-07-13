@@ -98,20 +98,12 @@ func TestPlayerAssertionRejectsMalformedArguments(t *testing.T) {
 func TestScenarioRegistryCloneIsolatesPlayerState(t *testing.T) {
 	registry := newScenarioRegistry()
 
-	original, ok := registry.modules[0].(*openMPState)
-	if !ok {
-		t.Fatal("scenario registry did not contain player state")
-	}
-
+	original := registry.Players
 	original.players[0] = &testPlayer{name: "Alice", connected: true, messages: []string{"hello"}}
 
 	clone := registry.Clone()
 
-	clonedState, ok := clone.modules[0].(*openMPState)
-	if !ok {
-		t.Fatal("cloned scenario registry did not contain player state")
-	}
-
+	clonedState := clone.Players
 	clonedPlayer := clonedState.players[0]
 	clonedPlayer.name = "Bob"
 	clonedPlayer.messages[0] = "changed"

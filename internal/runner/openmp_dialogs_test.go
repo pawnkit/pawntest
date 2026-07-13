@@ -116,10 +116,5 @@ func (vm *dialogMockVM) CallPublic(name string, args ...backend.Cell) (backend.C
 func dialogScenarioState(t *testing.T, registry *scenarioRegistry) *dialogState {
 	t.Helper()
 
-	state, ok := registry.modules[9].(*dialogState)
-	if !ok {
-		t.Fatal("scenario registry did not contain dialog state")
-	}
-
-	return state
+	return registry.Dialogs
 }

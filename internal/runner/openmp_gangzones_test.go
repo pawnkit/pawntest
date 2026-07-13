@@ -94,10 +94,5 @@ func TestGangZoneScenarioCloneIsolatesState(t *testing.T) {
 func gangZoneScenarioState(t *testing.T, registry *scenarioRegistry) *gangZoneState {
 	t.Helper()
 
-	state, ok := registry.modules[8].(*gangZoneState)
-	if !ok {
-		t.Fatal("scenario registry did not contain gang zone state")
-	}
-
-	return state
+	return registry.GangZones
 }

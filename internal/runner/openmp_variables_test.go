@@ -80,10 +80,5 @@ func TestVariableScenarioCloneIsolatesState(t *testing.T) {
 func variableScenarioState(t *testing.T, registry *scenarioRegistry) *variableState {
 	t.Helper()
 
-	state, ok := registry.modules[12].(*variableState)
-	if !ok {
-		t.Fatal("scenario registry did not contain variable state")
-	}
-
-	return state
+	return registry.Variables
 }

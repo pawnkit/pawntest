@@ -90,10 +90,5 @@ func TestServerScenarioCloneIsolatesState(t *testing.T) {
 func serverScenarioState(t *testing.T, registry *scenarioRegistry) *serverState {
 	t.Helper()
 
-	state, ok := registry.modules[13].(*serverState)
-	if !ok {
-		t.Fatal("scenario registry did not contain server state")
-	}
-
-	return state
+	return registry.Server
 }

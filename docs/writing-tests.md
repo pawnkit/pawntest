@@ -125,7 +125,7 @@ TEST(welcomes_player)
 {
     new playerid = TEST_CREATE_PLAYER("Alice");
 
-    SetPlayerMoney(playerid, 1000);
+    GivePlayerMoney(playerid, 1000);
     ASSERT_PLAYER_CONNECTED(playerid);
     ASSERT_PLAYER_MONEY(playerid, 1000);
 }

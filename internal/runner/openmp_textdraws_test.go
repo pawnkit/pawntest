@@ -119,10 +119,5 @@ func TestTextDrawScenarioCloneIsolatesState(t *testing.T) {
 func textDrawScenarioState(t *testing.T, registry *scenarioRegistry) *textDrawState {
 	t.Helper()
 
-	state, ok := registry.modules[7].(*textDrawState)
-	if !ok {
-		t.Fatal("scenario registry did not contain textdraw state")
-	}
-
-	return state
+	return registry.TextDraws
 }

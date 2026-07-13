@@ -4,8 +4,8 @@ import "github.com/pawnkit/pawntest/internal/backend"
 
 func (state *npcState) navigationNatives(result *nativeState) map[string]backend.NativeFunc {
 	return map[string]backend.NativeFunc{
-		"__pt_npc_playback": state.assertPlayback(result), "__pt_npc_path_count": state.assertNavigationCount(result, "paths", func() int { return len(state.paths) }),
-		"__pt_npc_record_count": state.assertNavigationCount(result, "records", func() int { return len(state.records) }),
+		"__pt_npc_playback": state.assertPlayback(result), "__pt_npc_path_count": assertScenarioCount(result, "NPC paths", func() int { return len(state.paths) }),
+		"__pt_npc_record_count": assertScenarioCount(result, "NPC records", func() int { return len(state.records) }),
 		"NPC_StartPlayback":     state.startNPCPlayback, "NPC_StartPlaybackEx": state.startNPCPlaybackRecord,
 		"NPC_StopPlayback": state.stopNPCPlayback, "NPC_PausePlayback": state.pauseNPCPlayback,
 		"NPC_IsPlayingPlayback": state.isNPCPlayingPlayback, "NPC_IsPlaybackPaused": state.isNPCPlaybackPaused,

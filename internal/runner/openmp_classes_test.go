@@ -108,10 +108,5 @@ func TestClassScenarioCloneIsolatesState(t *testing.T) {
 func classScenarioState(t *testing.T, registry *scenarioRegistry) *classState {
 	t.Helper()
 
-	state, ok := registry.modules[11].(*classState)
-	if !ok {
-		t.Fatal("scenario registry did not contain class state")
-	}
-
-	return state
+	return registry.Classes
 }

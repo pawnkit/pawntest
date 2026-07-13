@@ -1,8 +1,11 @@
 package include
 
-import "embed"
+import (
+	"embed"
+	"io/fs"
+)
 
-//go:embed pawntest.inc pawntest/*.inc
+//go:embed pawntest.inc pawntest/*.inc pawntest/scenarios/*.inc
 var files embed.FS
 
 func Pawntest() []byte {
@@ -13,10 +16,16 @@ func Pawntest() []byte {
 func Files() map[string][]byte {
 	out := map[string][]byte{}
 
-	for _, path := range []string{"pawntest.inc", "pawntest/core.inc", "pawntest/assertions.inc", "pawntest/mocks.inc", "pawntest/scenarios.inc"} {
+	_ = fs.WalkDir(files, ".", func(path string, entry fs.DirEntry, err error) error {
+		if err != nil || entry.IsDir() {
+			return err
+		}
+
 		data, _ := files.ReadFile(path)
 		out[path] = append([]byte(nil), data...)
-	}
+
+		return nil
+	})
 
 	return out
 }

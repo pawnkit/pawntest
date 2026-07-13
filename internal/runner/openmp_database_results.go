@@ -90,7 +90,7 @@ func (state *databaseState) getFieldStringByName(ctx backend.NativeContext, para
 	if len(params) < 4 {
 		return 0, nil
 	}
-	name, err := ctx.ReadString(params[1])
+	name, err := readNativeParams(ctx, params).String(1)
 	if err != nil {
 		return 0, err
 	}
@@ -173,7 +173,7 @@ func (state *databaseState) namedFieldValue(ctx backend.NativeContext, params []
 	if len(params) < 2 {
 		return "", nil
 	}
-	name, err := ctx.ReadString(params[1])
+	name, err := readNativeParams(ctx, params).String(1)
 	if err != nil {
 		return "", err
 	}

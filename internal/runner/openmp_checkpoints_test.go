@@ -77,10 +77,5 @@ func TestCheckpointScenarioCloneIsolatesState(t *testing.T) {
 func checkpointScenarioState(t *testing.T, registry *scenarioRegistry) *checkpointState {
 	t.Helper()
 
-	state, ok := registry.modules[5].(*checkpointState)
-	if !ok {
-		t.Fatal("scenario registry did not contain checkpoint state")
-	}
-
-	return state
+	return registry.Checkpoints
 }

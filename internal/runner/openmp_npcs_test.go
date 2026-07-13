@@ -252,10 +252,5 @@ func TestNPCNavigationCloneIsolatesPaths(t *testing.T) {
 func npcScenarioState(t *testing.T, registry *scenarioRegistry) *npcState {
 	t.Helper()
 
-	state, ok := registry.modules[14].(*npcState)
-	if !ok {
-		t.Fatal("scenario registry did not contain NPC state")
-	}
-
-	return state
+	return registry.NPCs
 }

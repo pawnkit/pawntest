@@ -84,12 +84,7 @@ func TestObjectScenarioStoresMaterialsAndClones(t *testing.T) {
 func objectScenarioState(t *testing.T, registry *scenarioRegistry) *objectState {
 	t.Helper()
 
-	state, ok := registry.modules[2].(*objectState)
-	if !ok {
-		t.Fatal("scenario registry did not contain object state")
-	}
-
-	return state
+	return registry.Objects
 }
 
 func TestObjectScenarioRejectsMissingPlayer(t *testing.T) {

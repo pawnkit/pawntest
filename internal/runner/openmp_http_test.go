@@ -117,10 +117,5 @@ func TestHTTPScenarioRejectsUnknownMethod(t *testing.T) {
 func httpScenarioState(t *testing.T, registry *scenarioRegistry) *httpState {
 	t.Helper()
 
-	state, ok := registry.modules[16].(*httpState)
-	if !ok {
-		t.Fatal("scenario registry did not contain HTTP state")
-	}
-
-	return state
+	return registry.HTTP
 }

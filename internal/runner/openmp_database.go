@@ -18,17 +18,21 @@ type databaseResult struct {
 
 type databaseState struct {
 	nextConnection int
-	connections    map[int]*sql.DB
+	connections    map[int]databaseConnection
 	nextResult     int
 	results        map[int]*databaseResult
+	open           databaseOpener
 }
 
 func newDatabaseState() *databaseState {
-	return &databaseState{connections: map[int]*sql.DB{}, results: map[int]*databaseResult{}}
+	return &databaseState{connections: map[int]databaseConnection{}, results: map[int]*databaseResult{}, open: openSQLiteDatabase}
 }
 
 func (state *databaseState) Clone() scenarioModule {
-	return newDatabaseState()
+	clone := newDatabaseState()
+	clone.open = state.open
+
+	return clone
 }
 
 func (state *databaseState) Close() error {
@@ -48,8 +52,8 @@ func (state *databaseState) Register(vm backend.VM, context *executionContext) e
 
 func (state *databaseState) natives(result *nativeState) map[string]backend.NativeFunc {
 	natives := map[string]backend.NativeFunc{
-		"__pt_database_connections": state.assertDatabaseCount(result, "connections", func() int { return len(state.connections) }),
-		"__pt_database_results":     state.assertDatabaseCount(result, "results", func() int { return len(state.results) }),
+		"__pt_database_connections": assertScenarioCount(result, "database connections", func() int { return len(state.connections) }),
+		"__pt_database_results":     assertScenarioCount(result, "database results", func() int { return len(state.results) }),
 		"DB_Open":                   state.openDatabase, "DB_Close": state.closeDatabase, "DB_ExecuteQuery": state.executeQuery,
 		"DB_FreeResultSet": state.freeResult, "DB_GetRowCount": state.getRowCount, "DB_SelectNextRow": state.selectNextRow,
 		"DB_GetFieldCount": state.getFieldCount, "DB_GetFieldName": state.getFieldName,
@@ -79,15 +83,14 @@ func (state *databaseState) openDatabase(ctx backend.NativeContext, params []bac
 	if len(params) == 0 {
 		return 0, nil
 	}
-	name, err := ctx.ReadString(params[0])
+	name, err := readNativeParams(ctx, params).String(0)
 	if err != nil {
 		return 0, err
 	}
-	database, err := sql.Open("sqlite", name)
+	database, err := state.open(name)
 	if err != nil {
 		return 0, nil
 	}
-	database.SetMaxOpenConns(1)
 	if err := database.Ping(); err != nil {
 		_ = database.Close()
 
@@ -124,7 +127,7 @@ func (state *databaseState) executeQuery(ctx backend.NativeContext, params []bac
 	if !ok {
 		return 0, nil
 	}
-	query, err := ctx.ReadString(params[1])
+	query, err := readNativeParams(ctx, params).String(1)
 	if err != nil {
 		return 0, err
 	}
@@ -139,7 +142,7 @@ func (state *databaseState) executeQuery(ctx backend.NativeContext, params []bac
 	return backend.Cell(id), nil
 }
 
-func queryDatabase(database *sql.DB, query string) (*databaseResult, error) {
+func queryDatabase(database databaseConnection, query string) (*databaseResult, error) {
 	rows, err := database.Query(query)
 	if err != nil {
 		return nil, err
@@ -172,6 +175,48 @@ func queryDatabase(database *sql.DB, query string) (*databaseResult, error) {
 	}
 
 	return result, rows.Err()
+}
+
+type databaseOpener func(name string) (databaseConnection, error)
+
+type databaseConnection interface {
+	Ping() error
+	Close() error
+	Query(query string) (databaseRows, error)
+}
+
+type databaseRows interface {
+	Columns() ([]string, error)
+	Next() bool
+	Scan(dest ...any) error
+	Err() error
+	Close() error
+}
+
+type sqliteDatabase struct {
+	database *sql.DB
+}
+
+func openSQLiteDatabase(name string) (databaseConnection, error) {
+	database, err := sql.Open("sqlite", name)
+	if err != nil {
+		return nil, err
+	}
+	database.SetMaxOpenConns(1)
+
+	return sqliteDatabase{database: database}, nil
+}
+
+func (database sqliteDatabase) Ping() error {
+	return database.database.Ping()
+}
+
+func (database sqliteDatabase) Close() error {
+	return database.database.Close()
+}
+
+func (database sqliteDatabase) Query(query string) (databaseRows, error) {
+	return database.database.Query(query)
 }
 
 func parseDatabaseInt(value string) backend.Cell {

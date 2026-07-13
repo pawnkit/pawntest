@@ -134,10 +134,5 @@ func callScenarioNative(t *testing.T, vm *mockVM, name string, params ...backend
 func vehicleScenarioState(t *testing.T, registry *scenarioRegistry) *vehicleState {
 	t.Helper()
 
-	state, ok := registry.modules[1].(*vehicleState)
-	if !ok {
-		t.Fatal("scenario registry did not contain vehicle state")
-	}
-
-	return state
+	return registry.Vehicles
 }

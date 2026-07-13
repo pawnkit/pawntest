@@ -71,7 +71,6 @@ func registerOpenMPPlayerNatives(vm backend.VM, nativeState *nativeState, state 
 		"GetPlayerName":          state.getPlayerName,
 		"SetPlayerPos":           state.setPlayerPos,
 		"GetPlayerPos":           state.getPlayerPos,
-		"SetPlayerMoney":         state.setPlayerMoney,
 		"GivePlayerMoney":        state.givePlayerMoney,
 		"GetPlayerMoney":         state.getPlayerMoney,
 		"SendClientMessage":      state.sendClientMessage,
@@ -157,17 +156,6 @@ func (state *openMPState) getPlayerPos(ctx backend.NativeContext, params []backe
 			return 0, err
 		}
 	}
-
-	return 1, nil
-}
-
-func (state *openMPState) setPlayerMoney(_ backend.NativeContext, params []backend.Cell) (backend.Cell, error) {
-	player, ok := state.paramPlayer(params)
-	if !ok || len(params) < 2 {
-		return 0, nil
-	}
-
-	player.money = int(params[1])
 
 	return 1, nil
 }

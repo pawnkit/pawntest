@@ -89,10 +89,5 @@ func TestTextLabelScenarioCloneIsolatesState(t *testing.T) {
 func textLabelScenarioState(t *testing.T, registry *scenarioRegistry) *textLabelState {
 	t.Helper()
 
-	state, ok := registry.modules[6].(*textLabelState)
-	if !ok {
-		t.Fatal("scenario registry did not contain text label state")
-	}
-
-	return state
+	return registry.TextLabels
 }
