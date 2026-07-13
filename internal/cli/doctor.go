@@ -48,8 +48,9 @@ func (d DoctorCmd) doctor(w io.Writer, configPath string, explicitPawnCC bool) e
 	pawncc, source, pawnccErr := d.resolveDoctorPawnCC(cacheDir, explicitPawnCC)
 
 	version := "unavailable"
+	versionOK := false
 	if pawnccErr == nil {
-		version = compilerVersion(pawncc)
+		version, versionOK = compilerVersion(pawncc)
 	}
 
 	fmt.Fprintln(w, cliColor(w, "pawntest doctor", ansiBold))
@@ -73,7 +74,7 @@ func (d DoctorCmd) doctor(w io.Writer, configPath string, explicitPawnCC bool) e
 		fmt.Fprintf(w, "pawncc: %s\n", cliColor(w, "not found: "+pawnccErr.Error(), ansiRed))
 		fmt.Fprintf(w, "sample: %s\n", cliColor(w, "skipped", ansiDim))
 
-		return nil
+		return errTestsFailed
 	}
 
 	fmt.Fprintf(w, "pawncc: %s (%s)\n", pawncc.Path, source)
@@ -81,7 +82,7 @@ func (d DoctorCmd) doctor(w io.Writer, configPath string, explicitPawnCC bool) e
 
 	if includeErr != nil {
 		fmt.Fprintf(w, "sample: %s\n", cliColor(w, "skipped", ansiDim))
-		return nil
+		return errTestsFailed
 	}
 
 	result := d.runDoctorSample(pawncc, includeDir)
@@ -89,6 +90,10 @@ func (d DoctorCmd) doctor(w io.Writer, configPath string, explicitPawnCC bool) e
 		fmt.Fprintf(w, "sample: %s\n", cliColor(w, result, ansiGreen))
 	} else {
 		fmt.Fprintf(w, "sample: %s\n", cliColor(w, result, ansiRed))
+	}
+
+	if !versionOK || result != "ok" {
+		return errTestsFailed
 	}
 
 	return nil
@@ -102,14 +107,14 @@ func (d DoctorCmd) resolveDoctorPawnCC(cacheDir string, explicit bool) (*compile
 		}
 
 		if explicit {
-			return compiler.Bare(path), "explicit", nil
+			return compiler.FromPath(path), "explicit", nil
 		}
 
-		return compiler.Bare(path), "config", nil
+		return compiler.FromPath(path), "config", nil
 	}
 
 	if path, err := exec.LookPath("pawncc"); err == nil {
-		return compiler.Bare(path), "PATH", nil
+		return compiler.FromPath(path), "PATH", nil
 	}
 
 	if c, ok := compiler.FindCachedCompiler(cacheDir); ok {
@@ -136,7 +141,7 @@ func resolveExecutable(path string) (string, error) {
 	return exec.LookPath(path)
 }
 
-func compilerVersion(c *compiler.Compiler) string {
+func compilerVersion(c *compiler.Compiler) (string, bool) {
 	cmd := c.Command()
 
 	var out bytes.Buffer
@@ -144,23 +149,25 @@ func compilerVersion(c *compiler.Compiler) string {
 	cmd.Stdout = &out
 
 	cmd.Stderr = &out
-	if err := cmd.Run(); err != nil && out.Len() == 0 {
-		return "error: " + err.Error()
-	}
+	runErr := cmd.Run()
 
 	for line := range strings.SplitSeq(out.String(), "\n") {
 		line = strings.TrimSpace(line)
 		if line != "" {
 			fields := strings.Fields(line)
 			if len(fields) >= 3 && strings.EqualFold(fields[0], "Pawn") && strings.EqualFold(fields[1], "compiler") {
-				return strings.Join(fields[:3], " ")
+				return strings.Join(fields[:3], " "), true
 			}
 
-			return line
+			return line, runErr == nil
 		}
 	}
 
-	return "unknown"
+	if runErr != nil {
+		return "error: " + runErr.Error(), false
+	}
+
+	return "unknown", false
 }
 
 func (d DoctorCmd) runDoctorSample(c *compiler.Compiler, includeDir string) string {

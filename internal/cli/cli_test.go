@@ -38,8 +38,8 @@ func TestDoctorCommandReportsEnvironmentWithoutCompiler(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 
 	code := Run([]string{"doctor", "--cache-dir", cacheDir}, &stdout, &stderr)
-	if code != ExitOK {
-		t.Fatalf("exit = %d, want %d; stderr=%q stdout=%q", code, ExitOK, stderr.String(), stdout.String())
+	if code != ExitFailed {
+		t.Fatalf("exit = %d, want %d; stderr=%q stdout=%q", code, ExitFailed, stderr.String(), stdout.String())
 	}
 
 	for _, want := range []string{

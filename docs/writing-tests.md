@@ -18,6 +18,43 @@ TEST(not_ready)
 
 See [Assertions](assertions.md), [Fixtures](fixtures.md), and [Mocking](mocking.md) for the core test APIs.
 
+## Existing modules
+
+Include project APIs before the production module:
+
+```pawn
+#include <open.mp>
+#include <pawntest>
+
+#include "../gamemodes/vehicle_helpers.inc"
+
+TEST(recognizes_police_vehicle)
+{
+    new vehicleid = TEST_CREATE_VEHICLE(596, 0.0, 0.0, 3.0);
+    ASSERT_TRUE(IsVehiclePolice(vehicleid));
+}
+```
+
+All symbols in an included module must resolve. Include plugin APIs with `-i`, or
+declare native signatures used only as runtime dependencies:
+
+```pawn
+#include <open.mp>
+#include <pawntest>
+
+native sscanf(const data[], const format[], {Float,_}:...);
+#include "../gamemodes/vehicle_helpers.inc"
+```
+
+Configure declared natives with [mocks](mocking.md) or
+`--allow-unknown-natives`. Use the plugin include when tests need its tags,
+constants, macros, or stocks.
+
+Keep testable callbacks and functions in `.inc` modules instead of the gamemode
+entry point.
+
+Test names are limited to 26 characters. Named fixtures are limited to 14.
+
 ## Isolation
 
 Each test starts from the state created by `BEFORE_ALL`. Test setup, mocks, memory, and time are isolated by default. Use `--isolation suite` only when tests must share state.

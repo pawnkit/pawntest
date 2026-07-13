@@ -188,7 +188,7 @@ func (a TestCmd) compilerOption() *compiler.Compiler {
 	}
 
 	if a.PawnCC != "" {
-		return compiler.Bare(a.PawnCC)
+		return compiler.FromPath(a.PawnCC)
 	}
 
 	return nil

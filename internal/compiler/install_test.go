@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -169,6 +170,19 @@ func TestBareCompilerHasNoLibDirs(t *testing.T) {
 
 	if cmd.Env != nil {
 		t.Fatalf("Bare().Command().Env = %#v, want nil (inherit process env)", cmd.Env)
+	}
+}
+
+func TestFromPathInfersCompilerLibraryDirs(t *testing.T) {
+	pawncc := filepath.Join("tools", "compiler", "bin", "pawncc")
+	c := FromPath(pawncc)
+
+	want := []string{
+		filepath.Join("tools", "compiler", "bin"),
+		filepath.Join("tools", "compiler", "lib"),
+	}
+	if !slices.Equal(want, c.LibDirs) {
+		t.Fatalf("FromPath().LibDirs = %#v, want %#v", c.LibDirs, want)
 	}
 }
 

@@ -185,7 +185,7 @@ func (r Runner) ensureAMX(path string) (string, error) {
 
 	var comp *compiler.Compiler
 	if r.PawnCC != "" {
-		comp = compiler.Bare(r.PawnCC)
+		comp = compiler.FromPath(r.PawnCC)
 	}
 
 	return compiler.Compile(path, compiler.Options{

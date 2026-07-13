@@ -17,6 +17,10 @@ func Compile(path string, opts Options) (string, error) {
 }
 
 func CompileContext(ctx context.Context, path string, opts Options) (string, error) {
+	if err := validateGeneratedSymbols(path); err != nil {
+		return "", err
+	}
+
 	c := opts.Compiler
 
 	pawnccPath := "pawncc"

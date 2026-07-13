@@ -13,9 +13,14 @@ type Compiler struct {
 	LibDirs []string
 }
 
-// Bare configures pawncc without library paths.
+// Bare configures pawncc without inferred library paths.
 func Bare(path string) *Compiler {
 	return &Compiler{Path: path}
+}
+
+// FromPath configures pawncc with adjacent and sibling library directories.
+func FromPath(path string) *Compiler {
+	return &Compiler{Path: path, LibDirs: compilerLibraryDirs(path)}
 }
 
 // Command creates a pawncc command.

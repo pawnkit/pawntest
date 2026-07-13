@@ -9,7 +9,7 @@ import (
 )
 
 func makeCompiler(pawnccPath string) *Compiler {
-	return &Compiler{Path: pawnccPath, LibDirs: compilerLibraryDirs(pawnccPath)}
+	return FromPath(pawnccPath)
 }
 
 func FindCachedCompiler(cacheDir string) (*Compiler, bool) {
