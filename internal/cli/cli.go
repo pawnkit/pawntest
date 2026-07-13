@@ -112,6 +112,7 @@ type TestCmd struct {
 	Watch               bool          `help:"Rerun tests when Pawn sources, includes, or configuration change."`
 	WatchInterval       time.Duration `default:"500ms" help:"Polling interval used by --watch."`
 	FuzzSeed            int64         `default:"1" help:"Base seed for deterministic property tests."`
+	Provider            []string      `help:"Pawn native provider source or AMX file."`
 
 	compilerCache *compiler.Compiler
 
@@ -215,13 +216,20 @@ func (a TestCmd) execute(ctx context.Context, stdout, stderr io.Writer) error {
 		return err
 	}
 
-	if err := a.ensureCompilerAvailable(ctx, files, stderr); err != nil {
+	compilerInputs := append(append([]string{}, files...), a.Provider...)
+	if err := a.ensureCompilerAvailable(ctx, compilerInputs, stderr); err != nil {
+		return err
+	}
+
+	providers, err := a.ensureProviders(ctx)
+	if err != nil {
 		return err
 	}
 
 	coverage := a.newCoverage()
 
 	r := a.newRunner(coverage)
+	r.Providers = providers
 	if a.List {
 		return a.listTests(ctx, stdout, files, r)
 	}
@@ -299,6 +307,19 @@ func (a TestCmd) newRunner(coverage *runner.Coverage) runner.Runner {
 		Coverage:            coverage,
 		FuzzSeed:            a.FuzzSeed,
 	}
+}
+
+func (a TestCmd) ensureProviders(ctx context.Context) ([]string, error) {
+	providers := make([]string, 0, len(a.Provider))
+	for _, path := range a.Provider {
+		provider, err := a.ensureAMX(ctx, path)
+		if err != nil {
+			return nil, fmt.Errorf("compile provider %s: %w", path, err)
+		}
+		providers = append(providers, provider)
+	}
+
+	return providers, nil
 }
 
 func (a TestCmd) listTests(ctx context.Context, stdout io.Writer, files []string, r runner.Runner) error {
@@ -384,7 +405,7 @@ func (a TestCmd) watch(ctx context.Context, stdout, stderr io.Writer) error {
 		a.Paths = []string{"."}
 	}
 
-	paths := watcher.Paths(a.discoveryPaths(), a.Include)
+	paths := watcher.Paths(append(a.discoveryPaths(), a.Provider...), a.Include)
 	snapshot := watcher.Files(paths)
 
 	for {

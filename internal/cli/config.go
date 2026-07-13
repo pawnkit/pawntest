@@ -50,6 +50,7 @@ type Config struct {
 	AllowEmpty          bool     `json:"allow_empty"          yaml:"allow_empty"          toml:"allow_empty"`
 	Verbose             bool     `json:"verbose"              yaml:"verbose"              toml:"verbose"`
 	Quiet               bool     `json:"quiet"                yaml:"quiet"                toml:"quiet"`
+	Providers           []string `json:"providers"            yaml:"providers"            toml:"providers"`
 }
 
 func LoadDefaultConfig() (Config, error) {
@@ -218,6 +219,10 @@ func (a *TestCmd) applyConfig(cfg Config) {
 
 	if a.FuzzSeed == 1 && cfg.FuzzSeed != 0 {
 		a.FuzzSeed = cfg.FuzzSeed
+	}
+
+	if len(a.Provider) == 0 {
+		a.Provider = cfg.Providers
 	}
 }
 

@@ -35,6 +35,7 @@ type Runner struct {
 	UpdateSnapshots     bool
 	Coverage            *Coverage
 	FuzzSeed            int64
+	Providers           []string
 }
 
 type suiteRunContext struct {
@@ -44,6 +45,7 @@ type suiteRunContext struct {
 	baseline  []byte
 	path      string
 	strict    bool
+	providers *providerSet
 }
 
 func (r Runner) List(path string) ([]backend.Public, error) {
@@ -62,6 +64,12 @@ func (r Runner) RunFile(path string) (Suite, error) {
 		return Suite{}, err
 	}
 	defer vm.Close()
+
+	providers, err := loadProviders(r.backend(), r.Providers, r.MaxInstructions)
+	if err != nil {
+		return Suite{}, err
+	}
+	defer providers.Close()
 
 	if r.Coverage != nil {
 		r.Coverage.instrument(vm)
@@ -89,11 +97,13 @@ func (r Runner) RunFile(path string) (Suite, error) {
 		scenarios: newScenarioRegistry(),
 		path:      path,
 		strict:    hasPublic(publics, "__pawntest_strict_scenarios"),
+		providers: providers,
 	}
 	defer sc.scenarios.Close()
 
 	suiteContext := newExecutionContext(sc.snapshots, sc.scenarios, r)
 	suiteContext.strict = sc.strict
+	suiteContext.providers = providers
 	suite := Suite{}
 
 	if fixture, ok := sc.fixtures["test_suite_setup"]; ok {
@@ -106,6 +116,7 @@ func (r Runner) RunFile(path string) (Suite, error) {
 	if snapshotter, ok := vm.(backend.MemorySnapshotter); ok && r.Isolation != "suite" {
 		sc.baseline = snapshotter.SnapshotMemory()
 	}
+	providers.snapshot()
 
 	for _, run := range runs {
 		result, err := r.runTest(vm, run, sc)
@@ -217,9 +228,15 @@ func (r Runner) runTest(vm backend.VM, run testRun, sc suiteRunContext) (Result,
 
 	context := newExecutionContext(sc.snapshots, scenarios, r)
 	context.strict = sc.strict
+	context.providers = sc.providers
 	start := time.Now()
 	result := Result{Name: run.name, File: sc.path, Status: Pass}
 	setupPassed := true
+
+	if err := sc.providers.beforeTest(r.Isolation, run.name); err != nil {
+		setupPassed = false
+		result = mergePhase(result, "provider setup", Result{Name: run.name, File: sc.path, Status: Error, Message: err.Error()})
+	}
 
 	if fixture, ok := sc.fixtures["test_setup"]; ok {
 		state, err := r.exec(vm, fixture, context)
@@ -253,6 +270,10 @@ func (r Runner) runTest(vm backend.VM, run testRun, sc suiteRunContext) (Result,
 		for _, message := range scenarios.StrictFailures() {
 			result = mergePhase(result, "strict scenarios", Result{Name: run.name, File: sc.path, Status: Fail, Message: message})
 		}
+	}
+
+	if err := sc.providers.afterTest(run.name); err != nil {
+		result = mergePhase(result, "provider teardown", Result{Name: run.name, File: sc.path, Status: Error, Message: err.Error()})
 	}
 
 	result.Duration = time.Since(start)

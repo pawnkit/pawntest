@@ -62,6 +62,7 @@ func TestPawnCCIntegrationListsAndRunsCompiledSource(t *testing.T) {
 	code = Run([]string{
 		"--pawncc", pawncc,
 		"--cache-dir", filepath.Join(t.TempDir(), "suite-cache"),
+		"--provider", filepath.Join(testsDir, "providers", "inventory.provider.pwn"),
 		"--allow-unknown-natives",
 		testsDir,
 	}, &suiteOut, &suiteErr)
@@ -97,6 +98,11 @@ func TestPawnCCIntegrationListsAndRunsCompiledSource(t *testing.T) {
 		"PASS  test_player_scenario",
 		"PASS  test_scenario_authoring",
 		"PASS  test_strict_http_scenario",
+		"PASS  test_provider_keeps_state",
+		"PASS  test_provider_state_is_isolated",
+		"PASS  test_provider_marshals_values",
+		"PASS  test_provider_calls_test_public",
+		"PASS  test_mock_overrides_provider",
 		"FAIL  test_property_shrinks_failure",
 		"ERROR test_divide_by_zero_errors",
 		"SKIP  test_skip_example",

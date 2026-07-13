@@ -31,6 +31,7 @@ type Runner struct {
 	Natives             map[string]NativeFunc
 	UpdateSnapshots     bool
 	FuzzSeed            int64
+	Providers           []string
 }
 
 func (r Runner) List(path string) ([]Public, error) {
@@ -39,7 +40,13 @@ func (r Runner) List(path string) ([]Public, error) {
 		return nil, err
 	}
 
-	publics, err := r.internal().List(amx)
+	providers, err := r.ensureProviders()
+	if err != nil {
+		return nil, err
+	}
+	internal := r.internal()
+	internal.Providers = providers
+	publics, err := internal.List(amx)
 	if err != nil {
 		return nil, err
 	}
@@ -59,6 +66,11 @@ func (r Runner) RunFile(path string) (Suite, error) {
 	}
 
 	internal := r.internal()
+	providers, err := r.ensureProviders()
+	if err != nil {
+		return Suite{}, err
+	}
+	internal.Providers = providers
 	internal.SourcePath = path
 	internal.UpdateSnapshots = r.UpdateSnapshots
 
@@ -81,6 +93,19 @@ func (r Runner) RunFile(path string) (Suite, error) {
 	}
 
 	return out, nil
+}
+
+func (r Runner) ensureProviders() ([]string, error) {
+	providers := make([]string, 0, len(r.Providers))
+	for _, path := range r.Providers {
+		amx, err := r.ensureAMX(path)
+		if err != nil {
+			return nil, err
+		}
+		providers = append(providers, amx)
+	}
+
+	return providers, nil
 }
 
 func (r Runner) internal() runner.Runner {

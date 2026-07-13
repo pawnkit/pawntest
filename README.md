@@ -49,5 +49,6 @@ See [Configuration](docs/config.md) for all options.
 - [Assertions](docs/assertions.md)
 - [Fixtures](docs/fixtures.md)
 - [Mocking](docs/mocking.md)
+- [Native providers](docs/providers.md)
 - [Reports](docs/reports.md)
 - [Limitations](docs/limitations.md)

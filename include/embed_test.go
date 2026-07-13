@@ -11,6 +11,7 @@ import (
 const pawnIdentifierLimit = 31
 
 var guardPattern = regexp.MustCompile(`^#(?:if defined|define)\s+([A-Za-z_][A-Za-z0-9_]*)$`)
+var nativePattern = regexp.MustCompile(`^native\s+(?:[A-Za-z_][A-Za-z0-9_]*:)?([A-Za-z_][A-Za-z0-9_]*)\s*\(`)
 
 func TestEmbeddedIncludesContainValidGuards(t *testing.T) {
 	embedded := Files()
@@ -35,6 +36,11 @@ func TestEmbeddedIncludesContainValidGuards(t *testing.T) {
 			match := guardPattern.FindStringSubmatch(line)
 			if len(match) == 2 && len(match[1]) > pawnIdentifierLimit {
 				t.Fatalf("%s guard %q has %d characters", path, match[1], len(match[1]))
+			}
+
+			match = nativePattern.FindStringSubmatch(line)
+			if len(match) == 2 && len(match[1]) > pawnIdentifierLimit {
+				t.Fatalf("%s native %q has %d characters", path, match[1], len(match[1]))
 			}
 		}
 

@@ -39,4 +39,5 @@ Argument and call indexes start at zero. Expectations are checked after teardown
 
 Unconfigured native calls fail by default. Use `--allow-unknown-natives` to return `0` instead.
 
-Explicit mocks override built-in player scenarios. Custom Go natives override both.
+Explicit mocks override Pawn providers and built-in scenarios. Custom Go natives
+override all other implementations.

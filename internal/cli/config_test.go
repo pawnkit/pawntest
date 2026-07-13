@@ -10,7 +10,7 @@ func TestLoadConfig(t *testing.T) {
 	t.Parallel()
 	path := filepath.Join(t.TempDir(), "pawntest.json")
 
-	data := []byte(`{"pawncc":"./pawncc","include":["include"],"tests":["tests/..."],"format":"json","cache_dir":".cache","allow_unknown_natives":true,"allow_empty":true}`)
+	data := []byte(`{"pawncc":"./pawncc","include":["include"],"tests":["tests/..."],"providers":["inventory.provider.pwn"],"format":"json","cache_dir":".cache","allow_unknown_natives":true,"allow_empty":true}`)
 	if err := os.WriteFile(path, data, 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -26,6 +26,9 @@ func TestLoadConfig(t *testing.T) {
 
 	if len(cfg.Tests) != 1 || cfg.Tests[0] != "tests/..." {
 		t.Fatalf("tests = %#v, want tests/...", cfg.Tests)
+	}
+	if len(cfg.Providers) != 1 || cfg.Providers[0] != "inventory.provider.pwn" {
+		t.Fatalf("providers = %#v", cfg.Providers)
 	}
 }
 

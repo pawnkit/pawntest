@@ -15,6 +15,7 @@ CLI arguments override config values.
 pawncc = "./tools/pawncc"
 include = ["include"]
 tests = ["tests/..."]
+providers = ["pawntest/inventory.provider.pwn"]
 format = "plain"
 ```
 
@@ -25,6 +26,7 @@ format = "plain"
 | `pawncc` | `""` | Path to `pawncc`; defaults to `PATH`. |
 | `include` | `[]` | Additional include directories. |
 | `tests` | `[]` | Default test paths. |
+| `providers` | `[]` | Pawn native provider source or AMX files. |
 | `format` | `plain` | `plain`, `json`, `tap`, or `junit`. |
 | `cache_dir` | OS cache | Cache directory. |
 | `allow_unknown_natives` | `false` | Return zero for unconfigured natives. |

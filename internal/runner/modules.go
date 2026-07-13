@@ -18,6 +18,7 @@ type executionContext struct {
 	allowUnknown bool
 	custom       map[string]backend.NativeFunc
 	strict       bool
+	providers    *providerSet
 }
 
 type nativeModule interface {
@@ -58,6 +59,9 @@ func defaultNativeModules() []nativeModule {
 		}),
 		nativeModuleFunc(func(vm backend.VM, context *executionContext) error {
 			return context.scenarios.Register(vm, context)
+		}),
+		nativeModuleFunc(func(vm backend.VM, context *executionContext) error {
+			return context.providers.Register(vm, context)
 		}),
 		nativeModuleFunc(func(vm backend.VM, context *executionContext) error {
 			for name, native := range context.custom {
@@ -225,5 +229,6 @@ func newExecutionContext(snapshots *snapshotStore, scenarios *scenarioRegistry, 
 		fuzzSeed:     runner.FuzzSeed,
 		allowUnknown: runner.AllowUnknownNatives,
 		custom:       runner.Natives,
+		providers:    &providerSet{natives: map[string]*providerNative{}},
 	}
 }

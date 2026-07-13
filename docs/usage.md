@@ -40,6 +40,7 @@ If `pawncc` is missing, interactive runs can install the openmultiplayer compile
 -q, --quiet             Show failures and the summary only.
 --allow-empty           Pass when no tests are found.
 --allow-unknown-natives Return zero for unconfigured natives.
+--provider path         Load a Pawn native provider source or AMX file.
 ```
 
 Run `pawntest --help` for all options.
