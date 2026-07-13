@@ -95,6 +95,8 @@ func TestPawnCCIntegrationListsAndRunsCompiledSource(t *testing.T) {
 		"PASS  test_string_snapshot",
 		"PASS  test_integer_property",
 		"PASS  test_player_scenario",
+		"PASS  test_scenario_authoring",
+		"PASS  test_strict_http_scenario",
 		"FAIL  test_property_shrinks_failure",
 		"ERROR test_divide_by_zero_errors",
 		"SKIP  test_skip_example",

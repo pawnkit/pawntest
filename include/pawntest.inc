@@ -8,6 +8,14 @@
 #include <pawntest/mocks>
 #include <pawntest/scenarios>
 
+#if defined PAWNTEST_STRICT_SCENARIOS
+forward __pawntest_strict_scenarios();
+public __pawntest_strict_scenarios()
+{
+    return 1;
+}
+#endif
+
 forward __pawntest_marker();
 public __pawntest_marker()
 {

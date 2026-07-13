@@ -6,7 +6,6 @@ native IsPlayerConnected(playerid);
 native GetPlayerName(playerid, name[], size);
 native SetPlayerPos(playerid, Float:x, Float:y, Float:z);
 native GetPlayerPos(playerid, &Float:x, &Float:y, &Float:z);
-native SetPlayerMoney(playerid, money);
 native GivePlayerMoney(playerid, money);
 native GetPlayerMoney(playerid);
 native SendClientMessage(playerid, color, const message[]);
@@ -17,7 +16,7 @@ TEST(player_scenario)
     new playerid = TEST_CREATE_PLAYER("Alice");
     ASSERT_PLAYER_CONNECTED(playerid);
 
-    SetPlayerMoney(playerid, 1000);
+    GivePlayerMoney(playerid, 1000);
     GivePlayerMoney(playerid, 250);
     ASSERT_PLAYER_MONEY(playerid, 1250);
 

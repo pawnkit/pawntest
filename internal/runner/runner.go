@@ -43,6 +43,7 @@ type suiteRunContext struct {
 	scenarios *scenarioRegistry
 	baseline  []byte
 	path      string
+	strict    bool
 }
 
 func (r Runner) List(path string) ([]backend.Public, error) {
@@ -87,10 +88,12 @@ func (r Runner) RunFile(path string) (Suite, error) {
 		snapshots: newSnapshotStore(source, r.UpdateSnapshots),
 		scenarios: newScenarioRegistry(),
 		path:      path,
+		strict:    hasPublic(publics, "__pawntest_strict_scenarios"),
 	}
 	defer sc.scenarios.Close()
 
 	suiteContext := newExecutionContext(sc.snapshots, sc.scenarios, r)
+	suiteContext.strict = sc.strict
 	suite := Suite{}
 
 	if fixture, ok := sc.fixtures["test_suite_setup"]; ok {
@@ -124,6 +127,12 @@ func (r Runner) RunFile(path string) (Suite, error) {
 		state, err := r.exec(vm, fixture, suiteContext)
 		if err != nil || state.status != Pass {
 			suite.Results = append(suite.Results, resultFromState("test_suite_teardown", path, state, err))
+		}
+	}
+
+	if sc.strict {
+		for _, message := range sc.scenarios.StrictFailures() {
+			suite.Results = append(suite.Results, Result{Name: "strict scenarios", File: path, Status: Fail, Message: message})
 		}
 	}
 
@@ -207,6 +216,7 @@ func (r Runner) runTest(vm backend.VM, run testRun, sc suiteRunContext) (Result,
 	}
 
 	context := newExecutionContext(sc.snapshots, scenarios, r)
+	context.strict = sc.strict
 	start := time.Now()
 	result := Result{Name: run.name, File: sc.path, Status: Pass}
 	setupPassed := true
@@ -239,9 +249,25 @@ func (r Runner) runTest(vm backend.VM, run testRun, sc suiteRunContext) (Result,
 		result = mergePhase(result, "mock verification", Result{Name: run.name, File: file, Line: line, Status: Fail, Message: message})
 	}
 
+	if context.strict && r.Isolation != "suite" {
+		for _, message := range scenarios.StrictFailures() {
+			result = mergePhase(result, "strict scenarios", Result{Name: run.name, File: sc.path, Status: Fail, Message: message})
+		}
+	}
+
 	result.Duration = time.Since(start)
 
 	return result, nil
+}
+
+func hasPublic(publics []backend.Public, name string) bool {
+	for _, public := range publics {
+		if public.Name == name {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (r Runner) exec(vm backend.VM, pub backend.Public, context *executionContext) (*nativeState, error) {

@@ -18,6 +18,12 @@ func TestEmbeddedIncludesContainValidGuards(t *testing.T) {
 		t.Fatalf("embedded %d include files, want at least 20", len(embedded))
 	}
 
+	for _, path := range []string{"pawntest/scenario_assertions.inc", "pawntest/scenarios/http.inc", "pawntest/scenarios/database.inc"} {
+		if len(embedded[path]) == 0 {
+			t.Fatalf("nested include %s was not embedded", path)
+		}
+	}
+
 	for path, data := range embedded {
 		scanner := bufio.NewScanner(bytes.NewReader(data))
 		for scanner.Scan() {

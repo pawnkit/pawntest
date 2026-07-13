@@ -17,6 +17,7 @@ type executionContext struct {
 	fuzzSeed     int64
 	allowUnknown bool
 	custom       map[string]backend.NativeFunc
+	strict       bool
 }
 
 type nativeModule interface {
@@ -199,6 +200,19 @@ func (registry *scenarioRegistry) Close() error {
 	}
 
 	return errors.Join(closeErrors...)
+}
+
+func (registry *scenarioRegistry) StrictFailures() []string {
+	failures := []string{}
+
+	for _, module := range registry.modules {
+		verifier, ok := module.(interface{ StrictFailures() []string })
+		if ok {
+			failures = append(failures, verifier.StrictFailures()...)
+		}
+	}
+
+	return failures
 }
 
 func newExecutionContext(snapshots *snapshotStore, scenarios *scenarioRegistry, runner Runner) *executionContext {

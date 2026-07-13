@@ -470,3 +470,14 @@ TEST(loads_profile)
 ```
 
 Method-specific responses match before URL-only responses. Callbacks run immediately and unconfigured requests return `0`.
+
+## Strict scenarios
+
+Enable strict checks before including Pawntest:
+
+```pawn
+#define PAWNTEST_STRICT_SCENARIOS
+#include <pawntest>
+```
+
+Strict mode fails on unconfigured or unused HTTP responses and unclosed database resources. Cleanup can remain in `AFTER_EACH`.

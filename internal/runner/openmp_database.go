@@ -46,6 +46,18 @@ func (state *databaseState) Close() error {
 	return errors.Join(closeErrors...)
 }
 
+func (state *databaseState) StrictFailures() []string {
+	failures := []string{}
+	if len(state.results) != 0 {
+		failures = append(failures, fmt.Sprintf("unfreed database results: %d", len(state.results)))
+	}
+	if len(state.connections) != 0 {
+		failures = append(failures, fmt.Sprintf("unclosed database connections: %d", len(state.connections)))
+	}
+
+	return failures
+}
+
 func (state *databaseState) Register(vm backend.VM, context *executionContext) error {
 	return registerScenarioNatives(vm, state.natives(context.state), context.mocks, context.allowUnknown)
 }

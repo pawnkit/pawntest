@@ -27,6 +27,7 @@ type httpResponseKey struct {
 type httpState struct {
 	responses map[httpResponseKey][]httpResponse
 	requests  []httpRequest
+	unmatched []httpRequest
 }
 
 const (
@@ -45,6 +46,7 @@ func (state *httpState) Clone() scenarioModule {
 		clone.responses[key] = append([]httpResponse(nil), responses...)
 	}
 	clone.requests = append([]httpRequest(nil), state.requests...)
+	clone.unmatched = append([]httpRequest(nil), state.unmatched...)
 
 	return clone
 }
@@ -145,6 +147,8 @@ func (state *httpState) request(ctx backend.NativeContext, params []backend.Cell
 
 	key, responses := state.responseQueue(params[1], url)
 	if len(responses) == 0 {
+		state.unmatched = append(state.unmatched, state.requests[len(state.requests)-1])
+
 		return 0, nil
 	}
 	response := responses[0]
@@ -161,6 +165,24 @@ func (state *httpState) request(ctx backend.NativeContext, params []backend.Cell
 	}
 
 	return 1, nil
+}
+
+func (state *httpState) StrictFailures() []string {
+	failures := make([]string, 0, len(state.unmatched)+1)
+
+	for _, request := range state.unmatched {
+		failures = append(failures, fmt.Sprintf("unconfigured HTTP request: method %d, URL %q", request.method, request.url))
+	}
+
+	pending := 0
+	for _, responses := range state.responses {
+		pending += len(responses)
+	}
+	if pending != 0 {
+		failures = append(failures, fmt.Sprintf("unused HTTP responses: %d", pending))
+	}
+
+	return failures
 }
 
 func (state *httpState) responseQueue(method backend.Cell, url string) (httpResponseKey, []httpResponse) {
