@@ -33,6 +33,19 @@ func TestLoadConfig(t *testing.T) {
 	}
 }
 
+func FuzzLoadJSONConfig(f *testing.F) {
+	f.Add([]byte(`{"format":"json"}`))
+	f.Add([]byte(`{"unknown":true}`))
+	f.Fuzz(func(t *testing.T, data []byte) {
+		path := filepath.Join(t.TempDir(), "pawntest.json")
+		if err := os.WriteFile(path, data, 0o644); err != nil {
+			t.Fatal(err)
+		}
+
+		_, _ = LoadConfig(path)
+	})
+}
+
 func TestLoadYAMLConfig(t *testing.T) {
 	t.Parallel()
 	path := filepath.Join(t.TempDir(), "pawntest.yaml")
@@ -89,6 +102,25 @@ func TestLoadConfigRejectsInvalidFormat(t *testing.T) {
 
 	if _, err := LoadConfig(path); err == nil {
 		t.Fatal("expected invalid format error")
+	}
+}
+
+func TestLoadConfigRejectsUnknownFields(t *testing.T) {
+	for name, data := range map[string]string{
+		"pawntest.json": `{"formt":"json"}`,
+		"pawntest.yaml": "formt: json\n",
+		"pawntest.toml": "formt = \"json\"\n",
+	} {
+		t.Run(filepath.Ext(name), func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), name)
+			if err := os.WriteFile(path, []byte(data), 0o644); err != nil {
+				t.Fatal(err)
+			}
+
+			if _, err := LoadConfig(path); err == nil {
+				t.Fatal("unknown config field was accepted")
+			}
+		})
 	}
 }
 

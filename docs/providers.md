@@ -19,8 +19,8 @@ new inventory[16][32];
 forward PawntestProviderInit();
 public PawntestProviderInit()
 {
-    PROVIDE_NATIVE(Inventory_Add, Provider_InventoryAdd);
-    PROVIDE_NATIVE(Inventory_Count, Provider_InventoryCount);
+    PROVIDE_NATIVE(Inventory_Add, Provider_InventoryAdd, "i,i,i");
+    PROVIDE_NATIVE(Inventory_Count, Provider_InventoryCount, "i,i");
     return 1;
 }
 
@@ -51,7 +51,13 @@ PROVIDER_SET_STRING(argument, value, size);
 ```
 
 Argument indexes are zero-based. Use `PROVIDER_CALL0` through
-`PROVIDER_CALL3` to invoke a public in the test AMX.
+`PROVIDER_CALL8` to invoke a public in the test AMX.
+Callback arguments are cells or floats; string and array callback arguments are
+not supported by the current ABI.
+
+Signature kinds are `i` (cell), `f` (float), `s` (input string), `r` (cell
+reference), `S:n` (output string), `a:n` (input array), and `A:n` (output
+array). `n` is the zero-based argument containing the buffer or array length.
 
 ## Lifecycle
 
@@ -64,8 +70,15 @@ PawntestProviderAfterTest();
 PawntestProviderShutdown();
 ```
 
+Lifecycle callbacks return nonzero on success. Use `PROVIDER_TEST_NAME` during
+before/after callbacks to read the active test name.
+
 Provider memory is restored before each test under test isolation. Suite
 isolation preserves provider memory for the full test file.
 
 Duplicate provider registrations fail. Explicit mocks override providers.
 Custom Go natives override providers and mocks.
+
+Providers are trusted dependency code. The provider bridge can read and write
+declared test-AMX buffers. Bounds are enforced from registered signatures.
+Precompiled providers must match `PAWNTEST_PROVIDER_ABI`.

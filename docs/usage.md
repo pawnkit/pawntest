@@ -43,6 +43,8 @@ If `pawncc` is missing, interactive runs can install the openmultiplayer compile
 --provider path         Load a Pawn native provider source or AMX file.
 ```
 
+Allowed unknown-native calls are included as warnings in all report formats.
+
 Run `pawntest --help` for all options.
 
 ## Diagnostics
@@ -51,6 +53,7 @@ Check the compiler, cache, and a sample test:
 
 ```sh
 pawntest doctor
+pawntest cache clean
 ```
 
 ## Exit codes

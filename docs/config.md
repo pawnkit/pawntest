@@ -10,6 +10,7 @@ pawntest.toml
 ```
 
 CLI arguments override config values.
+Unknown fields are rejected.
 
 ```toml
 pawncc = "./tools/pawncc"

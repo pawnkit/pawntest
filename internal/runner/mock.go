@@ -63,6 +63,10 @@ func mockUnknownNative(name string, mocks *mockState, allowUnmocked bool) backen
 			)
 		}
 
+		if !mocked && !configured && allowUnmocked {
+			mocks.unknown[name]++
+		}
+
 		mocks.recordCall(name, ctx, params)
 
 		if err := mocks.applyOutputs(name, ctx, params); err != nil {
@@ -88,6 +92,7 @@ type mockState struct {
 	expectations  []*mockExpectation
 	expectedOrder []mockLocation
 	actualOrder   []string
+	unknown       map[string]int
 }
 
 type mockExpectation struct {
@@ -135,7 +140,24 @@ func newMockState() *mockState {
 		outputs:       map[string]map[int]backend.Cell{},
 		stringOutputs: map[string]map[int]mockStringOutput{},
 		callbacks:     map[string]string{},
+		unknown:       map[string]int{},
 	}
+}
+
+func (mocks *mockState) unknownWarnings() []string {
+	names := make([]string, 0, len(mocks.unknown))
+	for name := range mocks.unknown {
+		names = append(names, name)
+	}
+
+	slices.Sort(names)
+
+	warnings := make([]string, 0, len(names))
+	for _, name := range names {
+		warnings = append(warnings, fmt.Sprintf("unknown native %s returned zero (%d calls)", name, mocks.unknown[name]))
+	}
+
+	return warnings
 }
 
 func (mocks *mockState) returnValue(name string) (backend.Cell, bool) {

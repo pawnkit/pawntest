@@ -51,28 +51,28 @@ type suiteRunContext struct {
 	providers *providerSet
 }
 
-func (r Runner) List(path string) ([]backend.Public, error) {
+func (r Runner) List(path string) (tests []backend.Public, returnErr error) {
 	vm, publics, err := r.loadVM(path)
 	if err != nil {
 		return nil, err
 	}
-	defer vm.Close()
+	defer func() { returnErr = errors.Join(returnErr, vm.Close()) }()
 
 	return r.selectTests(publics)
 }
 
-func (r Runner) RunFile(path string) (Suite, error) {
+func (r Runner) RunFile(path string) (suite Suite, returnErr error) {
 	vm, publics, err := r.loadVM(path)
 	if err != nil {
 		return Suite{}, err
 	}
-	defer vm.Close()
+	defer func() { returnErr = errors.Join(returnErr, vm.Close()) }()
 
 	providers, err := loadProviders(r.backend(), r.Providers, r.MaxInstructions)
 	if err != nil {
 		return Suite{}, err
 	}
-	defer providers.Close()
+	defer func() { returnErr = errors.Join(returnErr, providers.Close()) }()
 
 	if r.Coverage != nil {
 		r.Coverage.instrument(vm)
@@ -98,16 +98,16 @@ func (r Runner) RunFile(path string) (Suite, error) {
 		fixtures:  findFixtures(publics),
 		snapshots: newSnapshotStore(source, r.UpdateSnapshots),
 		scenarios: newScenarioRegistry(),
-		path:      path,
+		path:      source,
 		strict:    hasPublic(publics, "__pawntest_strict_scenarios"),
 		providers: providers,
 	}
-	defer sc.scenarios.Close()
+	defer func() { returnErr = errors.Join(returnErr, sc.scenarios.Close()) }()
 
 	suiteContext := newExecutionContext(sc.snapshots, sc.scenarios, r)
 	suiteContext.strict = sc.strict
 	suiteContext.providers = providers
-	suite := Suite{}
+	suite = Suite{}
 
 	if fixture, ok := sc.fixtures["test_suite_setup"]; ok {
 		if failed := r.runSuiteSetup(vm, fixture, suiteContext, runs, sc); failed != nil {
@@ -269,6 +269,8 @@ func (r Runner) runTest(vm backend.VM, run testRun, sc suiteRunContext) (Result,
 	if message, file, line := context.mocks.verify(); message != "" {
 		result = mergePhase(result, "mock verification", Result{Name: run.name, File: file, Line: line, Status: Fail, Message: message})
 	}
+
+	result.Warnings = context.mocks.unknownWarnings()
 
 	if context.strict && r.Isolation != isolationSuite {
 		for _, message := range scenarios.StrictFailures() {

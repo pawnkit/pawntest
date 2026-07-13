@@ -60,6 +60,24 @@ func TestDoctorCommandReportsEnvironmentWithoutCompiler(t *testing.T) {
 	}
 }
 
+func TestCacheCleanRemovesConfiguredDirectory(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "cached.amx"), []byte("cache"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	var stdout, stderr bytes.Buffer
+
+	code := Run([]string{"cache", "clean", "--cache-dir", dir}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("exit = %d; stderr=%q", code, stderr.String())
+	}
+
+	if _, err := os.Stat(dir); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("cache directory still exists: %v", err)
+	}
+}
+
 func TestWriteReportColorAlwaysOnlyAppliesToPlain(t *testing.T) {
 	t.Parallel()
 

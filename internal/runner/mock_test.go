@@ -74,6 +74,10 @@ func TestRunnerAllowsUnmockedUnknownNativeWhenEnabled(t *testing.T) {
 	if vm.nativeReturn != 0 {
 		t.Fatalf("unmocked native return = %d, want 0", vm.nativeReturn)
 	}
+
+	if len(suite.Results[0].Warnings) != 1 || !strings.Contains(suite.Results[0].Warnings[0], "external_native") {
+		t.Fatalf("warnings = %#v", suite.Results[0].Warnings)
+	}
 }
 
 type mockBackend struct {

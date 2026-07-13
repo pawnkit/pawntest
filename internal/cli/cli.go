@@ -79,6 +79,15 @@ type SharedFlags struct {
 
 type DoctorCmd struct {
 	SharedFlags
+	Provider []string `help:"Pawn native provider source or AMX file."`
+}
+
+type CacheCleanCmd struct {
+	CacheDir string `help:"Cache directory to remove."`
+}
+
+type CacheCmd struct {
+	Clean CacheCleanCmd `cmd:"" help:"Remove cached files."`
 }
 
 type TestCmd struct {
@@ -115,6 +124,7 @@ type TestCmd struct {
 	Provider            []string      `help:"Pawn native provider source or AMX file."`
 
 	compilerCache *compiler.Compiler
+	diagnostics   io.Writer
 
 	stdinSrc    *os.File
 	canPromptFn func() bool
@@ -135,6 +145,7 @@ type CLI struct {
 	Version versionFlag `name:"version" short:"V" help:"Print version and exit."`
 	Test    TestCmd     `cmd:"" default:"withargs" help:"Run Pawn tests (default command)."`
 	Doctor  DoctorCmd   `cmd:"doctor"              help:"Print environment diagnostics and run a sample compile/check."`
+	Cache   CacheCmd    `cmd:"cache"               help:"Manage cached files."`
 }
 
 var errTestsFailed = errors.New("tests failed")
@@ -142,7 +153,8 @@ var errTestsFailed = errors.New("tests failed")
 func Run(args []string, stdout, stderr io.Writer) int {
 	var cli CLI
 
-	parser, err := kong.New(&cli,
+	parser, err := kong.New(
+		&cli,
 		kong.Name("pawntest"),
 		kong.Description("Pawn test runner for SA-MP/open.mp-style projects."),
 		kong.Vars{"version": Version},
@@ -166,6 +178,8 @@ func Run(args []string, stdout, stderr io.Writer) int {
 	switch parsed.Command() {
 	case "doctor":
 		execErr = cli.Doctor.execute(ctx, stdout)
+	case "cache clean":
+		execErr = cli.Cache.Clean.execute(stdout)
 	default:
 		execErr = cli.Test.execute(ctx, stdout, stderr)
 	}
@@ -181,6 +195,38 @@ func Run(args []string, stdout, stderr io.Writer) int {
 	}
 
 	return ExitOK
+}
+
+func (c CacheCleanCmd) execute(w io.Writer) error {
+	dir := c.CacheDir
+	if dir == "" {
+		cfg, err := LoadDefaultConfig()
+		if err != nil {
+			return err
+		}
+
+		dir = cfg.CacheDir
+		if dir == "" {
+			dir = cache.Dir()
+		}
+	}
+
+	abs, err := filepath.Abs(dir)
+	if err != nil {
+		return err
+	}
+
+	if abs == filepath.VolumeName(abs)+string(filepath.Separator) {
+		return fmt.Errorf("refusing to remove filesystem root %s", abs)
+	}
+
+	if err := os.RemoveAll(dir); err != nil {
+		return err
+	}
+
+	_, err = fmt.Fprintf(w, "removed %s\n", dir)
+
+	return err
 }
 
 func (a TestCmd) compilerOption() *compiler.Compiler {
@@ -206,6 +252,7 @@ func (a TestCmd) execute(ctx context.Context, stdout, stderr io.Writer) error {
 	}
 
 	a.applyConfig(cfg)
+	a.diagnostics = stderr
 
 	if err := a.validate(); err != nil {
 		return err
@@ -699,13 +746,14 @@ func (a TestCmd) compilerOptions(ctx context.Context, path string) (compiler.Opt
 	}
 
 	return compiler.Options{
-		Compiler:  a.compilerOption(),
-		Includes:  includes,
-		Defines:   a.Define,
-		ExtraArgs: a.CompilerArg,
-		OutDir:    outDir,
-		NoCache:   a.NoCache,
-		Count:     a.Count,
+		Compiler:    a.compilerOption(),
+		Includes:    includes,
+		Defines:     a.Define,
+		ExtraArgs:   a.CompilerArg,
+		OutDir:      outDir,
+		NoCache:     a.NoCache,
+		Count:       a.Count,
+		Diagnostics: a.diagnostics,
 	}, nil
 }
 

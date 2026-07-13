@@ -107,7 +107,7 @@ func Paths(inputs, includes []string) []string {
 	}
 
 	paths = append(paths, includes...)
-	paths = append(paths, "pawntest.json", "pawntest.yaml", "pawntest.yml", "pawn.json", "pawn.yaml", "pawn.yml")
+	paths = append(paths, "pawntest.json", "pawntest.yaml", "pawntest.yml", "pawntest.toml")
 	sort.Strings(paths)
 
 	return paths
@@ -122,7 +122,7 @@ func addFile(files Snapshot, path string) {
 
 func watchedFile(path string) bool {
 	extension := strings.ToLower(filepath.Ext(path))
-	return extension == ".pwn" || extension == ".inc" || extension == ".json" || extension == ".yaml" || extension == ".yml"
+	return extension == ".pwn" || extension == ".inc" || extension == ".json" || extension == ".yaml" || extension == ".yml" || extension == ".toml"
 }
 
 func ignoredDirectory(name string) bool {

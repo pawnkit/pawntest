@@ -5,8 +5,17 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 	"testing"
 )
+
+func FuzzParseIncludes(f *testing.F) {
+	f.Add("#include <pawntest>\n#include \"local.inc\"\n")
+	f.Add("#include")
+	f.Fuzz(func(t *testing.T, source string) {
+		_ = parseIncludes(source)
+	})
+}
 
 func TestCompileUsesCacheAndPassesArgs(t *testing.T) {
 	dir := t.TempDir()
@@ -19,15 +28,22 @@ func TestCompileUsesCacheAndPassesArgs(t *testing.T) {
 	log := filepath.Join(dir, "calls.log")
 	pawncc := fakePawnCC(t, dir, log)
 
+	var diagnostics strings.Builder
+
 	out, err := Compile(src, Options{
-		Compiler:  Bare(pawncc),
-		Includes:  []string{"include"},
-		Defines:   []string{"TESTING"},
-		ExtraArgs: []string{"-O0"},
-		OutDir:    filepath.Join(dir, "cache"),
+		Compiler:    Bare(pawncc),
+		Includes:    []string{"include"},
+		Defines:     []string{"TESTING"},
+		ExtraArgs:   []string{"-O0"},
+		OutDir:      filepath.Join(dir, "cache"),
+		Diagnostics: &diagnostics,
 	})
 	if err != nil {
 		t.Fatal(err)
+	}
+
+	if !strings.Contains(diagnostics.String(), "compiler warning") {
+		t.Fatalf("diagnostics = %q", diagnostics.String())
 	}
 
 	if filepath.Base(out) == "math_test.amx" {
@@ -78,6 +94,48 @@ func TestCompileUsesCacheAndPassesArgs(t *testing.T) {
 
 	if got := normalizeNewlines(string(calls)); got != "call\ncall\n" {
 		t.Fatalf("fake pawncc calls after forced compile = %q, want two calls", got)
+	}
+}
+
+func TestCompileSerializesConcurrentCacheWrites(t *testing.T) {
+	dir := t.TempDir()
+
+	src := filepath.Join(dir, "math.test.pwn")
+	if err := os.WriteFile(src, []byte("public test_addition() {}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	log := filepath.Join(dir, "calls.log")
+	pawncc := fakePawnCC(t, dir, log)
+	opts := Options{Compiler: Bare(pawncc), OutDir: filepath.Join(dir, "cache")}
+
+	var wait sync.WaitGroup
+
+	errorsFound := make(chan error, 8)
+
+	for range 8 {
+		wait.Go(func() {
+			_, err := Compile(src, opts)
+			errorsFound <- err
+		})
+	}
+
+	wait.Wait()
+	close(errorsFound)
+
+	for err := range errorsFound {
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	calls, err := os.ReadFile(log)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if got := normalizeNewlines(string(calls)); got != "call\n" {
+		t.Fatalf("compiler calls = %q, want one", got)
 	}
 }
 
@@ -138,6 +196,81 @@ func TestCompileKeyIncludesUserIncludeContent(t *testing.T) {
 	}
 }
 
+func TestCompileKeyIncludesCompilerContent(t *testing.T) {
+	dir := t.TempDir()
+	src := filepath.Join(dir, "math.test.pwn")
+	pawncc := filepath.Join(dir, "pawncc")
+
+	if err := os.WriteFile(src, []byte("public test_addition() {}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := os.WriteFile(pawncc, []byte("compiler-one"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	first, err := compileKey(src, pawncc, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := os.WriteFile(pawncc, []byte("compiler-two"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	second, err := compileKey(src, pawncc, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if first == second {
+		t.Fatal("compile key did not change after compiler content changed")
+	}
+}
+
+func TestCompileKeyIncludesNestedRelativeInclude(t *testing.T) {
+	dir := t.TempDir()
+	src := filepath.Join(dir, "math.test.pwn")
+
+	nestedDir := filepath.Join(dir, "modules")
+	if err := os.MkdirAll(nestedDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	helper := filepath.Join(nestedDir, "helper.inc")
+	value := filepath.Join(nestedDir, "value.inc")
+
+	if err := os.WriteFile(src, []byte("#include \"modules/helper.inc\"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := os.WriteFile(helper, []byte("#include \"value.inc\"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := os.WriteFile(value, []byte("#define VALUE 1\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	first, err := compileKey(src, "missing-pawncc", Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := os.WriteFile(value, []byte("#define VALUE 2\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	second, err := compileKey(src, "missing-pawncc", Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if first == second {
+		t.Fatal("compile key did not change after nested include changed")
+	}
+}
+
 func TestParseIncludes(t *testing.T) {
 	got := parseIncludes("#include <pawntest>\n#include \"local.inc\"\n#include <nested/path>\n")
 
@@ -162,6 +295,7 @@ func fakePawnCC(t *testing.T, dir, log string) string {
 		script := "@echo off\r\n"
 		script += "setlocal EnableDelayedExpansion\r\n"
 		script += "echo call>> \"%PAWNTEST_CALL_LOG%\"\r\n"
+		script += "echo compiler warning 1>&2\r\n"
 		script += ":loop\r\n"
 		script += "if \"%~1\"==\"\" goto done\r\n"
 		script += "set \"arg=%~1\"\r\n"
@@ -183,6 +317,7 @@ func fakePawnCC(t *testing.T, dir, log string) string {
 
 	script := "#!/bin/sh\n"
 	script += "printf 'call\\n' >> \"$PAWNTEST_CALL_LOG\"\n"
+	script += "printf 'compiler warning\\n' >&2\n"
 	script += "for arg in \"$@\"; do case \"$arg\" in -o*) out=${arg#-o};; esac; done\n"
 	script += "mkdir -p \"$(dirname \"$out\")\"\n"
 

@@ -12,17 +12,16 @@ jobs:
     name: Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version-file: go.mod
       - name: golangci-lint
-        uses: golangci/golangci-lint-action@v9
+        uses: golangci/golangci-lint-action@db9de0fc1a667e1a49d2291a1a042dff081d78f6 # v9
         with:
-          version: latest
-          only-new-issues: true
+          version: v2.12.2
 
   test:
     strategy:
@@ -34,15 +33,31 @@ jobs:
           - windows-latest
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-go@v6
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
         with:
           go-version-file: go.mod
       - name: Install 32-bit compiler runtime
         if: matrix.os == 'ubuntu-latest'
         run: sudo apt-get update && sudo apt-get install -y libc6-i386
       - run: go test ./...
+      - name: Coverage floor
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          go test ./... -coverprofile=coverage.out
+          total=$(go tool cover -func=coverage.out | awk '/^total:/ {gsub("%", "", $3); print $3}')
+          awk -v total="$total" 'BEGIN {if (total < 40) exit 1}'
+      - name: Fuzz parsers
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          go test ./internal/compiler -run=^$ -fuzz=FuzzParseIncludes -fuzztime=5s
+          go test ./internal/runner -run=^$ -fuzz=FuzzParseProviderSignature -fuzztime=5s
+          go test ./internal/backend -run=^$ -fuzz=FuzzGoAMXLoadBytes -fuzztime=5s
+          go test ./internal/cli -run=^$ -fuzz=FuzzLoadJSONConfig -fuzztime=5s
       - run: go vet ./...
+      - name: Vulnerability scan
+        if: matrix.os == 'ubuntu-latest'
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.6.0 ./...
       - name: Test with race detector
         if: matrix.os != 'windows-latest'
         run: CGO_ENABLED=1 go test -race ./...
@@ -52,7 +67,6 @@ jobs:
           CGO_ENABLED: "1"
       - run: go build ./cmd/pawntest
       - name: Test compiler installer against GitHub release
-        if: matrix.os == 'ubuntu-latest'
         run: go test ./internal/compiler -run TestInstallOpenMPCompilerIntegration -count=1 -v
         env:
           PAWNTEST_INSTALL_INTEGRATION: "1"
@@ -75,3 +89,25 @@ jobs:
         env:
           PAWNTEST_PAWNCC: /tmp/pawnc-3.10.11-linux/bin/pawncc
           LD_LIBRARY_PATH: /tmp/pawnc-3.10.11-linux/lib
+
+  release-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version-file: go.mod
+      - uses: anchore/sbom-action/download-syft@e22c389904149dbc22b58101806040fa8d37a610 # v0
+      - uses: goreleaser/goreleaser-action@f06c13b6b1a9625abc9e6e439d9c05a8f2190e94 # v7
+        with:
+          version: v2.12.7
+          args: release --snapshot --clean
+      - name: Smoke test Linux archive
+        run: |
+          archive=$(find dist -name '*linux_amd64.tar.gz' -print -quit)
+          test -n "$archive"
+          mkdir -p /tmp/pawntest-release
+          tar -xzf "$archive" -C /tmp/pawntest-release
+          /tmp/pawntest-release/pawntest --version

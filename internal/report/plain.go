@@ -66,6 +66,10 @@ func writePlainResult(w io.Writer, result runner.Result, source string, opts Pla
 	fmt.Fprintf(w, "%s%s %s%s\n", indent, formatStatus(result.Status, opts.Color), result.Name, duration)
 	writeIndentedLines(w, indent, result.Message)
 
+	for _, warning := range result.Warnings {
+		fmt.Fprintf(w, "%s      warning: %s\n", indent, warning)
+	}
+
 	if location := formatLocation(result, source, opts.Verbose); location != "" {
 		fmt.Fprintf(w, "%s      %s\n", indent, colorize(location, ansiDim, opts.Color))
 	}

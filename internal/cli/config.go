@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -88,15 +89,26 @@ func loadConfigIfExists(path string) (Config, bool, error) {
 
 	switch filepath.Ext(path) {
 	case ".yaml", ".yml":
-		if err := yaml.Unmarshal(data, &cfg); err != nil {
+		decoder := yaml.NewDecoder(bytes.NewReader(data))
+		decoder.KnownFields(true)
+
+		if err := decoder.Decode(&cfg); err != nil {
 			return Config{}, true, err
 		}
 	case ".toml":
-		if err := toml.Unmarshal(data, &cfg); err != nil {
+		metadata, err := toml.Decode(string(data), &cfg)
+		if err != nil {
 			return Config{}, true, err
 		}
+
+		if undecoded := metadata.Undecoded(); len(undecoded) > 0 {
+			return Config{}, true, fmt.Errorf("unknown config field %q", undecoded[0])
+		}
 	default:
-		if err := json.Unmarshal(data, &cfg); err != nil {
+		decoder := json.NewDecoder(bytes.NewReader(data))
+		decoder.DisallowUnknownFields()
+
+		if err := decoder.Decode(&cfg); err != nil {
 			return Config{}, true, err
 		}
 	}
@@ -237,5 +249,9 @@ func (d *DoctorCmd) applyConfig(cfg Config) {
 
 	if d.CacheDir == "" {
 		d.CacheDir = cfg.CacheDir
+	}
+
+	if len(d.Provider) == 0 {
+		d.Provider = cfg.Providers
 	}
 }

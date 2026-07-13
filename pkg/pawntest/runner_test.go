@@ -1,11 +1,34 @@
 package pawntest
 
 import (
+	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
 )
+
+func TestNewRunnerUsesSafeDefaults(t *testing.T) {
+	runner := NewRunner()
+	if runner.MaxInstructions != DefaultMaxInstructions || runner.Isolation != "test" || runner.Repeat != 1 {
+		t.Fatalf("NewRunner() = %#v", runner)
+	}
+
+	if got := (Runner{}).internal().MaxInstructions; got != DefaultMaxInstructions {
+		t.Fatalf("zero-value instruction limit = %d", got)
+	}
+}
+
+func TestRunnerContextCancellationStopsCompilation(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	_, err := (Runner{}).RunFileContext(ctx, filepath.Join(t.TempDir(), "missing.test.pwn"))
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("error = %v, want context cancellation", err)
+	}
+}
 
 func TestRunnerCompilesSourceBeforeListing(t *testing.T) {
 	dir := t.TempDir()

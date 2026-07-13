@@ -1,7 +1,9 @@
 package pawntest
 
 import (
+	"context"
 	"errors"
+	"io"
 	"path/filepath"
 	"strings"
 
@@ -10,6 +12,8 @@ import (
 	"github.com/pawnkit/pawntest/internal/compiler"
 	"github.com/pawnkit/pawntest/internal/runner"
 )
+
+const DefaultMaxInstructions = 1_000_000
 
 type Runner struct {
 	Run                 string
@@ -32,15 +36,24 @@ type Runner struct {
 	UpdateSnapshots     bool
 	FuzzSeed            int64
 	Providers           []string
+	CompilerOutput      io.Writer
+}
+
+func NewRunner() Runner {
+	return Runner{Isolation: "test", Seed: 1, Repeat: 1, MaxInstructions: DefaultMaxInstructions, FuzzSeed: 1}
 }
 
 func (r Runner) List(path string) ([]Public, error) {
-	amx, err := r.ensureAMX(path)
+	return r.ListContext(context.Background(), path)
+}
+
+func (r Runner) ListContext(ctx context.Context, path string) ([]Public, error) {
+	amx, err := r.ensureAMXContext(ctx, path)
 	if err != nil {
 		return nil, err
 	}
 
-	providers, err := r.ensureProviders()
+	providers, err := r.ensureProviders(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -62,14 +75,18 @@ func (r Runner) List(path string) ([]Public, error) {
 }
 
 func (r Runner) RunFile(path string) (Suite, error) {
-	amx, err := r.ensureAMX(path)
+	return r.RunFileContext(context.Background(), path)
+}
+
+func (r Runner) RunFileContext(ctx context.Context, path string) (Suite, error) {
+	amx, err := r.ensureAMXContext(ctx, path)
 	if err != nil {
 		return Suite{}, err
 	}
 
 	internal := r.internal()
 
-	providers, err := r.ensureProviders()
+	providers, err := r.ensureProviders(ctx)
 	if err != nil {
 		return Suite{}, err
 	}
@@ -77,6 +94,10 @@ func (r Runner) RunFile(path string) (Suite, error) {
 	internal.Providers = providers
 	internal.SourcePath = path
 	internal.UpdateSnapshots = r.UpdateSnapshots
+
+	if err := ctx.Err(); err != nil {
+		return Suite{}, err
+	}
 
 	suite, err := internal.RunFile(amx)
 	if err != nil {
@@ -92,6 +113,7 @@ func (r Runner) RunFile(path string) (Suite, error) {
 			Line:     result.Line,
 			Status:   Status(result.Status),
 			Message:  result.Message,
+			Warnings: append([]string(nil), result.Warnings...),
 			Duration: result.Duration.Milliseconds(),
 		})
 	}
@@ -99,10 +121,10 @@ func (r Runner) RunFile(path string) (Suite, error) {
 	return out, nil
 }
 
-func (r Runner) ensureProviders() ([]string, error) {
+func (r Runner) ensureProviders(ctx context.Context) ([]string, error) {
 	providers := make([]string, 0, len(r.Providers))
 	for _, path := range r.Providers {
-		amx, err := r.ensureAMX(path)
+		amx, err := r.ensureAMXContext(ctx, path)
 		if err != nil {
 			return nil, err
 		}
@@ -129,6 +151,11 @@ func (r Runner) internal() runner.Runner {
 		}
 	}
 
+	maxInstructions := r.MaxInstructions
+	if maxInstructions == 0 {
+		maxInstructions = DefaultMaxInstructions
+	}
+
 	return runner.Runner{
 		Run:                 r.Run,
 		FailFast:            r.FailFast,
@@ -138,7 +165,7 @@ func (r Runner) internal() runner.Runner {
 		Shuffle:             r.Shuffle,
 		Seed:                r.Seed,
 		Repeat:              r.Repeat,
-		MaxInstructions:     r.MaxInstructions,
+		MaxInstructions:     maxInstructions,
 		Natives:             natives,
 		FuzzSeed:            r.FuzzSeed,
 	}
@@ -191,7 +218,11 @@ func (ctx nativeContext) CallPublic(name string, args ...Cell) (Cell, error) {
 	return Cell(value), err
 }
 
-func (r Runner) ensureAMX(path string) (string, error) {
+func (r Runner) ensureAMXContext(ctx context.Context, path string) (string, error) {
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
+
 	if strings.EqualFold(filepath.Ext(path), ".amx") {
 		return path, nil
 	}
@@ -218,13 +249,14 @@ func (r Runner) ensureAMX(path string) (string, error) {
 		comp = compiler.FromPath(r.PawnCC)
 	}
 
-	return compiler.Compile(path, compiler.Options{
-		Compiler:  comp,
-		Includes:  includes,
-		Defines:   r.Define,
-		ExtraArgs: r.CompilerArg,
-		OutDir:    outDir,
-		NoCache:   r.NoCache,
-		Count:     r.Count,
+	return compiler.CompileContext(ctx, path, compiler.Options{
+		Compiler:    comp,
+		Includes:    includes,
+		Defines:     r.Define,
+		ExtraArgs:   r.CompilerArg,
+		OutDir:      outDir,
+		NoCache:     r.NoCache,
+		Count:       r.Count,
+		Diagnostics: r.CompilerOutput,
 	})
 }

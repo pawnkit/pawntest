@@ -19,14 +19,14 @@ forward Provider_BeforeCount();
 
 public PawntestProviderInit()
 {
-    PROVIDE_NATIVE(Inventory_Add, Provider_InventoryAdd);
-    PROVIDE_NATIVE(Inventory_Count, Provider_InventoryCount);
-    PROVIDE_NATIVE(Inventory_Name, Provider_InventoryName);
-    PROVIDE_NATIVE(Inventory_Find, Provider_InventoryFind);
-    PROVIDE_NATIVE(Inventory_Read, Provider_InventoryRead);
-    PROVIDE_NATIVE(Inventory_Load, Provider_InventoryLoad);
-    PROVIDE_NATIVE(Inventory_Double, Provider_InventoryDouble);
-    PROVIDE_NATIVE(Inventory_BeforeCount, Provider_BeforeCount);
+    PROVIDE_NATIVE(Inventory_Add, Provider_InventoryAdd, "i,i,i");
+    PROVIDE_NATIVE(Inventory_Count, Provider_InventoryCount, "i,i");
+    PROVIDE_NATIVE(Inventory_Name, Provider_InventoryName, "i,S:2,i");
+    PROVIDE_NATIVE(Inventory_Find, Provider_InventoryFind, "s");
+    PROVIDE_NATIVE(Inventory_Read, Provider_InventoryRead, "r");
+    PROVIDE_NATIVE(Inventory_Load, Provider_InventoryLoad, "i,s");
+    PROVIDE_NATIVE(Inventory_Double, Provider_InventoryDouble, "a:2,A:2,i");
+    PROVIDE_NATIVE(Inventory_BeforeCount, Provider_BeforeCount, "");
     return 1;
 }
 

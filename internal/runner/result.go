@@ -20,6 +20,7 @@ type Result struct {
 	Line     int           `json:"line,omitempty"`
 	Status   Status        `json:"status"`
 	Message  string        `json:"message,omitempty"`
+	Warnings []string      `json:"warnings,omitempty"`
 	Duration time.Duration `json:"duration"`
 }
 

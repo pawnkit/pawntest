@@ -17,13 +17,14 @@ type Public struct {
 }
 
 type Result struct {
-	Name     string `json:"name"`
-	Source   string `json:"source,omitempty"`
-	File     string `json:"file"`
-	Line     int    `json:"line,omitempty"`
-	Status   Status `json:"status"`
-	Message  string `json:"message,omitempty"`
-	Duration int64  `json:"duration_ms"`
+	Name     string   `json:"name"`
+	Source   string   `json:"source,omitempty"`
+	File     string   `json:"file"`
+	Line     int      `json:"line,omitempty"`
+	Status   Status   `json:"status"`
+	Message  string   `json:"message,omitempty"`
+	Warnings []string `json:"warnings,omitempty"`
+	Duration int64    `json:"duration_ms"`
 }
 
 type Suite struct {

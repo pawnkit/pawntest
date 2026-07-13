@@ -65,6 +65,12 @@ func (d DoctorCmd) doctor(w io.Writer, configPath string, explicitPawnCC bool) e
 
 	fmt.Fprintf(w, "cache: %s\n", cacheDir)
 
+	if len(d.Provider) == 0 {
+		fmt.Fprintln(w, "providers: none")
+	} else {
+		fmt.Fprintf(w, "providers: %s\n", strings.Join(d.Provider, ", "))
+	}
+
 	if includeErr != nil {
 		fmt.Fprintf(w, "include: %s\n", cliColor(w, "error: "+includeErr.Error(), ansiRed))
 	} else {
@@ -202,7 +208,23 @@ TEST(doctor_sample)
 		return "compile error: " + err.Error()
 	}
 
-	suite, err := (runner.Runner{Backend: backend.NewGoAMXBackend()}).RunFile(amx)
+	providers := make([]string, 0, len(d.Provider))
+	for _, path := range d.Provider {
+		provider := path
+		if !strings.EqualFold(filepath.Ext(path), ".amx") {
+			provider, err = compiler.Compile(path, compiler.Options{
+				Compiler: c, Includes: append([]string{includeDir}, d.Include...), Defines: d.Define,
+				ExtraArgs: d.CompilerArg, OutDir: dir, NoCache: true, Count: 1,
+			})
+			if err != nil {
+				return "provider error: " + err.Error()
+			}
+		}
+
+		providers = append(providers, provider)
+	}
+
+	suite, err := (runner.Runner{Backend: backend.NewGoAMXBackend(), Providers: providers, MaxInstructions: 1_000_000}).RunFile(amx)
 	if err != nil {
 		return "run error: " + err.Error()
 	}

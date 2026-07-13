@@ -4,10 +4,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/pawnkit/pawntest/internal/cache"
 )
@@ -54,7 +56,35 @@ func CompileContext(ctx context.Context, path string, opts Options) (string, err
 		}
 	}
 
-	args := buildArgs(out, path, opts)
+	unlock, err := lockCompile(ctx, out+".lock")
+	if err != nil {
+		return "", err
+	}
+	defer unlock()
+
+	if !opts.NoCache && opts.Count != 1 {
+		if _, err := os.Stat(out); err == nil {
+			return out, nil
+		}
+	}
+
+	temp, err := os.CreateTemp(outDir, ".pawntest-*.amx")
+	if err != nil {
+		return "", err
+	}
+
+	tempOut := temp.Name()
+	if err := temp.Close(); err != nil {
+		os.Remove(tempOut)
+		return "", err
+	}
+
+	if err := os.Remove(tempOut); err != nil {
+		return "", err
+	}
+	defer os.Remove(tempOut)
+
+	args := buildArgs(tempOut, path, opts)
 
 	var cmd *exec.Cmd
 	if c != nil {
@@ -74,7 +104,72 @@ func CompileContext(ctx context.Context, path string, opts Options) (string, err
 		return "", fmt.Errorf("pawncc failed: %w: %s", err, strings.TrimSpace(stderr.String()))
 	}
 
+	if opts.Diagnostics != nil && stderr.Len() > 0 {
+		if err := writeCompilerDiagnostics(opts.Diagnostics, stderr.String()); err != nil {
+			return "", err
+		}
+	}
+
+	if err := replaceFile(tempOut, out); err != nil {
+		return "", err
+	}
+
 	return out, nil
+}
+
+func writeCompilerDiagnostics(writer io.Writer, diagnostics string) error {
+	for line := range strings.SplitSeq(diagnostics, "\n") {
+		if strings.Contains(line, `warning 209: function "test_`) {
+			continue
+		}
+
+		if line == "" {
+			continue
+		}
+
+		if _, err := fmt.Fprintln(writer, line); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func lockCompile(ctx context.Context, path string) (func(), error) {
+	for {
+		file, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
+		if err == nil {
+			_ = file.Close()
+			return func() { _ = os.Remove(path) }, nil
+		}
+
+		if !os.IsExist(err) {
+			return nil, err
+		}
+
+		if info, statErr := os.Stat(path); statErr == nil && time.Since(info.ModTime()) > 30*time.Minute {
+			_ = os.Remove(path)
+			continue
+		}
+
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(25 * time.Millisecond):
+		}
+	}
+}
+
+func replaceFile(source, destination string) error {
+	if err := os.Rename(source, destination); err == nil {
+		return nil
+	}
+
+	if err := os.Remove(destination); err != nil && !os.IsNotExist(err) {
+		return err
+	}
+
+	return os.Rename(source, destination)
 }
 
 func buildArgs(out, path string, opts Options) []string {
@@ -102,7 +197,7 @@ func compileKey(path, pawncc string, opts Options) (string, error) {
 	var parts [][]byte
 
 	parts = append(parts, src)
-	parts = append(parts, []byte(pawncc))
+	parts = append(parts, compilerIdentity(pawncc, opts.Compiler))
 	parts = append(parts, []byte("pawntest-compiler-mode=-C-,-d2"))
 
 	parts = append(parts, cache.IncludeBundleBytes())
@@ -127,6 +222,37 @@ func compileKey(path, pawncc string, opts Options) (string, error) {
 	return cache.Key(parts...), nil
 }
 
+func compilerIdentity(path string, configured *Compiler) []byte {
+	resolved := path
+	if found, err := exec.LookPath(path); err == nil {
+		resolved = found
+	}
+
+	data, err := os.ReadFile(resolved)
+	if err != nil {
+		return []byte("compiler-path=" + path)
+	}
+
+	identity := append([]byte("compiler="+resolved+"\x00"), data...)
+	if configured == nil {
+		return identity
+	}
+
+	for _, dir := range configured.LibDirs {
+		for _, name := range []string{"libpawnc.so", "libpawnc.dylib", "pawnc.dll", "libpawnc.dll"} {
+			library := filepath.Join(dir, name)
+
+			data, err := os.ReadFile(library)
+			if err == nil {
+				identity = append(identity, []byte("\x00library="+library+"\x00")...)
+				identity = append(identity, data...)
+			}
+		}
+	}
+
+	return identity
+}
+
 func includeDependencyBytes(src string, includeDirs []string) ([][]byte, error) {
 	seen := map[string]bool{}
 
@@ -143,8 +269,13 @@ func collectIncludeDependencies(path string, search []string, seen map[string]bo
 
 	var parts [][]byte
 
-	for _, include := range parseIncludes(string(data)) {
-		includePath, ok := resolveInclude(include, search)
+	for _, include := range parseIncludeDirectives(string(data)) {
+		includeSearch := search
+		if include.quoted {
+			includeSearch = append([]string{filepath.Dir(path)}, search...)
+		}
+
+		includePath, ok := resolveInclude(include.name, includeSearch)
 		if !ok || seen[includePath] {
 			continue
 		}
@@ -171,6 +302,20 @@ func collectIncludeDependencies(path string, search []string, seen map[string]bo
 
 func parseIncludes(src string) []string {
 	var out []string
+	for _, include := range parseIncludeDirectives(src) {
+		out = append(out, include.name)
+	}
+
+	return out
+}
+
+type includeDirective struct {
+	name   string
+	quoted bool
+}
+
+func parseIncludeDirectives(src string) []includeDirective {
+	var out []includeDirective
 
 	for line := range strings.SplitSeq(src, "\n") {
 		line = strings.TrimSpace(line)
@@ -185,7 +330,7 @@ func parseIncludes(src string) []string {
 
 		if rest[0] == '<' {
 			if end := strings.IndexByte(rest, '>'); end > 1 {
-				out = append(out, rest[1:end])
+				out = append(out, includeDirective{name: rest[1:end]})
 			}
 
 			continue
@@ -193,7 +338,7 @@ func parseIncludes(src string) []string {
 
 		if rest[0] == '"' {
 			if end := strings.IndexByte(rest[1:], '"'); end >= 0 {
-				out = append(out, rest[1:1+end])
+				out = append(out, includeDirective{name: rest[1 : 1+end], quoted: true})
 			}
 		}
 	}

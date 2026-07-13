@@ -9,7 +9,11 @@ pawntest tests --format tap
 pawntest tests --format junit --output test-results.xml
 ```
 
-Use plain output locally and structured formats in CI. `--verbose` adds durations and source paths. `--quiet` shows failures and the summary only.
+Use plain output locally and structured formats in CI. `--verbose` adds durations
+and absolute source paths. `--quiet` shows failures and the summary only.
+
+JSON results include `source` and assertion/runtime `file` locations. JUnit uses
+the source as `classname` and `file`. TAP emits source and warning diagnostics.
 
 ## Statuses
 

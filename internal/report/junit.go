@@ -4,12 +4,14 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/pawnkit/pawntest/internal/runner"
 )
 
 type junitSuite struct {
 	XMLName  xml.Name    `xml:"testsuite"`
+	Name     string      `xml:"name,attr,omitempty"`
 	Tests    int         `xml:"tests,attr"`
 	Failures int         `xml:"failures,attr"`
 	Errors   int         `xml:"errors,attr"`
@@ -18,11 +20,14 @@ type junitSuite struct {
 }
 
 type junitCase struct {
-	Name    string        `xml:"name,attr"`
-	Time    string        `xml:"time,attr"`
-	Failure *junitFailure `xml:"failure,omitempty"`
-	Error   *junitFailure `xml:"error,omitempty"`
-	Skipped *junitSkipped `xml:"skipped,omitempty"`
+	Name      string        `xml:"name,attr"`
+	Class     string        `xml:"classname,attr,omitempty"`
+	File      string        `xml:"file,attr,omitempty"`
+	Time      string        `xml:"time,attr"`
+	Failure   *junitFailure `xml:"failure,omitempty"`
+	Error     *junitFailure `xml:"error,omitempty"`
+	Skipped   *junitSkipped `xml:"skipped,omitempty"`
+	SystemOut string        `xml:"system-out,omitempty"`
 }
 
 type junitFailure struct {
@@ -34,9 +39,13 @@ type junitSkipped struct {
 }
 
 func JUnit(w io.Writer, suite runner.Suite) error {
-	js := junitSuite{Tests: len(suite.Results)}
+	js := junitSuite{Name: "pawntest", Tests: len(suite.Results)}
 	for _, r := range suite.Results {
-		c := junitCase{Name: r.Name, Time: fmt.Sprintf("%.3f", r.Duration.Seconds())}
+		c := junitCase{Name: r.Name, Class: r.Source, File: r.Source, Time: fmt.Sprintf("%.3f", r.Duration.Seconds())}
+		if len(r.Warnings) > 0 {
+			c.SystemOut = strings.Join(r.Warnings, "\n")
+		}
+
 		switch r.Status {
 		case runner.Pass:
 		case runner.Fail:

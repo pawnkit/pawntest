@@ -124,14 +124,14 @@ func TestTAPSkipDirective(t *testing.T) {
 }
 
 func TestJSONUsesDurationMSAndSummary(t *testing.T) {
-	suite := runner.Suite{Results: []runner.Result{{Name: "test_pass", Status: runner.Pass, Duration: 2 * time.Millisecond}}}
+	suite := runner.Suite{Results: []runner.Result{{Name: "test_pass", Source: "tests/pass.test.pwn", Status: runner.Pass, Duration: 2 * time.Millisecond}}}
 
 	var out bytes.Buffer
 	if err := JSON(&out, suite); err != nil {
 		t.Fatal(err)
 	}
 
-	for _, want := range []string{`"summary"`, `"total": 1`, `"duration_ms": 2`} {
+	for _, want := range []string{`"summary"`, `"total": 1`, `"duration_ms": 2`, `"source": "tests/pass.test.pwn"`} {
 		if !strings.Contains(out.String(), want) {
 			t.Fatalf("JSON output missing %q:\n%s", want, out.String())
 		}
@@ -139,7 +139,7 @@ func TestJSONUsesDurationMSAndSummary(t *testing.T) {
 }
 
 func TestJUnitUsesSecondsDuration(t *testing.T) {
-	suite := runner.Suite{Results: []runner.Result{{Name: "test_pass", Status: runner.Pass, Duration: 1500 * time.Millisecond}}}
+	suite := runner.Suite{Results: []runner.Result{{Name: "test_pass", Source: "tests/pass.test.pwn", Status: runner.Pass, Duration: 1500 * time.Millisecond}}}
 
 	var out bytes.Buffer
 	if err := JUnit(&out, suite); err != nil {
@@ -148,6 +148,25 @@ func TestJUnitUsesSecondsDuration(t *testing.T) {
 
 	if !strings.Contains(out.String(), `time="1.500"`) {
 		t.Fatalf("JUnit output missing seconds duration:\n%s", out.String())
+	}
+
+	for _, want := range []string{`classname="tests/pass.test.pwn"`, `file="tests/pass.test.pwn"`} {
+		if !strings.Contains(out.String(), want) {
+			t.Fatalf("JUnit output missing %q:\n%s", want, out.String())
+		}
+	}
+}
+
+func TestTAPIncludesSource(t *testing.T) {
+	suite := runner.Suite{Results: []runner.Result{{Name: "test_pass", Source: "tests/pass.test.pwn", Status: runner.Pass}}}
+
+	var out bytes.Buffer
+	if err := TAP(&out, suite); err != nil {
+		t.Fatal(err)
+	}
+
+	if !strings.Contains(out.String(), `source: "tests/pass.test.pwn"`) {
+		t.Fatalf("TAP output missing source:\n%s", out.String())
 	}
 }
 
