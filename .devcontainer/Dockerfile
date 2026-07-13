@@ -1,1 +1,1 @@
-FROM ghcr.io/adrfranklin/godevcontainer
+FROM ghcr.io/adrfranklin/godevcontainer:debian
