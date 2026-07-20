@@ -21,6 +21,9 @@ archives:
   - id: default
     formats:
       - tar.gz
+    files:
+      - src: include
+        dst: include
     format_overrides:
       - goos: windows
         formats:
