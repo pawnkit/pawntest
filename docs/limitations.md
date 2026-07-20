@@ -7,5 +7,9 @@
 - Linux and Windows compiler downloads are not available on ARM.
 - Coverage instruments the test AMX, not provider AMXs.
 - Provider callback arguments are limited to eight cells or floats.
+- Legacy plugins run only on Linux and require a separately installed
+  `pawn-plugin-host` worker and loader.
+- The legacy bridge supports one native with up to 32 cell arguments. It does
+  not yet support strings, references, arrays, callbacks, or worker reuse.
 
 To test source compilation locally, set `PAWNTEST_PAWNCC` and run `go test`.

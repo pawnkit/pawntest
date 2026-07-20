@@ -1,6 +1,7 @@
 # Configuration
 
-Pawntest loads the first config file found in the working directory:
+Pawntest reads the nearest `pawn.json` or `pawn.yaml`, then checks the working
+directory for the first of these files:
 
 ```text
 pawntest.json
@@ -9,7 +10,7 @@ pawntest.yml
 pawntest.toml
 ```
 
-CLI arguments override config values.
+The local file overrides the project manifest. CLI arguments take precedence.
 Unknown fields are rejected.
 
 ```toml
@@ -19,6 +20,10 @@ tests = ["tests/..."]
 providers = ["pawntest/inventory.provider.pwn"]
 format = "plain"
 ```
+
+The same settings can live under `pawnkit.tool.pawntest` in the project
+manifest. `pawnkit.tests.paths` supplies the default test paths, and
+`pawnkit.includePaths` supplies include directories.
 
 ## Fields
 
@@ -44,6 +49,12 @@ format = "plain"
 | `coverage` | `false` | Collect coverage. |
 | `coverage_output` | `""` | Coverage output path. |
 | `coverage_format` | `lcov` | `lcov` or `json`. |
+| `profile` | `false` | Count instructions by Pawn function. |
+| `profile_output` | `profile.json` | Instruction profile output path. |
 | `fuzz_seed` | `1` | Property-test seed. |
 | `verbose` | `false` | Show durations and source paths. |
 | `quiet` | `false` | Show failures and the summary only. |
+| `native_plugin` | `""` | Legacy plugin library to load. |
+| `plugin_architecture` | `x86` | Plugin architecture: `x86` or `x64`. |
+| `plugin_worker_32` | `""` | Path to the x86 plugin worker. |
+| `plugin_worker_64` | `""` | Path to the x64 plugin worker. |

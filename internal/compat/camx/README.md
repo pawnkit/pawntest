@@ -1,4 +1,4 @@
-# Canonical AMX Sources
+# Canonical AMX sources
 
 These files are copied unchanged from
 `openmultiplayer/compiler` commit `bca794a1bc17c6bcb60c1fd0360b4daaff63d50a`:

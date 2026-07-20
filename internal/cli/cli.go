@@ -17,6 +17,8 @@ import (
 	"github.com/alecthomas/kong"
 	"golang.org/x/sync/errgroup"
 
+	pluginbridge "github.com/pawnkit/pawn-plugin-host/bridge"
+	plugincontroller "github.com/pawnkit/pawn-plugin-host/controller"
 	"github.com/pawnkit/pawntest/internal/backend"
 	"github.com/pawnkit/pawntest/internal/cache"
 	"github.com/pawnkit/pawntest/internal/compiler"
@@ -119,10 +121,16 @@ type TestCmd struct {
 	Coverage            bool          `help:"Collect source-line coverage."`
 	CoverageOutput      string        `help:"Coverage output path (default: coverage.lcov or coverage.json)."`
 	CoverageFormat      string        `default:"lcov" enum:"lcov,json" help:"Coverage output format."`
+	Profile             bool          `help:"Collect instruction profile data."`
+	ProfileOutput       string        `default:"profile.json" help:"Instruction profile output path."`
 	Watch               bool          `help:"Rerun tests when Pawn sources, includes, or configuration change."`
 	WatchInterval       time.Duration `default:"500ms" help:"Polling interval used by --watch."`
 	FuzzSeed            int64         `default:"1" help:"Base seed for deterministic property tests."`
 	Provider            []string      `help:"Pawn native provider source or AMX file."`
+	NativePlugin        string        `help:"Legacy native plugin to run in an isolated worker."`
+	PluginArchitecture  string        `default:"x86" enum:"x86,x64" help:"Native plugin architecture."`
+	PluginWorker32      string        `help:"Path to the x86 plugin worker."`
+	PluginWorker64      string        `help:"Path to the x64 plugin worker."`
 
 	compilerCache *compiler.Compiler
 	diagnostics   io.Writer
@@ -252,7 +260,14 @@ func (a TestCmd) execute(ctx context.Context, stdout, stderr io.Writer) error {
 		return err
 	}
 
-	a.applyConfig(cfg)
+	projectCfg, _, err := loadProjectConfig(workingDirectory())
+	if err != nil {
+		return err
+	}
+
+	projectCfg.merge(cfg)
+
+	a.applyConfig(projectCfg)
 	a.diagnostics = stderr
 
 	if err := a.validate(); err != nil {
@@ -275,8 +290,16 @@ func (a TestCmd) execute(ctx context.Context, stdout, stderr io.Writer) error {
 	}
 
 	coverage := a.newCoverage()
+	profile := a.newProfile()
 
-	r := a.newRunner(coverage)
+	r := a.newRunner(coverage, profile)
+
+	pluginNatives, err := a.pluginNatives(ctx)
+	if err != nil {
+		return err
+	}
+
+	r.Natives = pluginNatives
 
 	r.Providers = providers
 	if a.List {
@@ -302,6 +325,24 @@ func (a TestCmd) execute(ctx context.Context, stdout, stderr io.Writer) error {
 	if coverage != nil {
 		if err := a.writeCoverage(coverage); err != nil {
 			return err
+		}
+	}
+
+	if profile != nil {
+		file, err := os.Create(a.ProfileOutput)
+		if err != nil {
+			return err
+		}
+
+		err = profile.WriteJSON(file)
+		closeErr := file.Close()
+
+		if err != nil {
+			return err
+		}
+
+		if closeErr != nil {
+			return closeErr
 		}
 	}
 
@@ -341,7 +382,30 @@ func (a TestCmd) newCoverage() *runner.Coverage {
 	return runner.NewCoverage()
 }
 
-func (a TestCmd) newRunner(coverage *runner.Coverage) runner.Runner {
+func (a TestCmd) newProfile() *runner.Profile {
+	if !a.Profile {
+		return nil
+	}
+
+	return runner.NewProfile()
+}
+
+func (a TestCmd) pluginNatives(ctx context.Context) (map[string]backend.NativeFunc, error) {
+	if a.NativePlugin == "" {
+		return nil, nil
+	}
+
+	client := plugincontroller.Client{Worker32: a.PluginWorker32, Worker64: a.PluginWorker64}
+
+	name, native, err := pluginbridge.Native(ctx, client, a.NativePlugin, a.PluginArchitecture)
+	if err != nil {
+		return nil, fmt.Errorf("native plugin: %w", err)
+	}
+
+	return map[string]backend.NativeFunc{name: native}, nil
+}
+
+func (a TestCmd) newRunner(coverage *runner.Coverage, profile *runner.Profile) runner.Runner {
 	return runner.Runner{
 		Backend:             backend.NewGoAMXBackend(),
 		Run:                 a.Run,
@@ -354,6 +418,7 @@ func (a TestCmd) newRunner(coverage *runner.Coverage) runner.Runner {
 		Repeat:              a.Repeat,
 		MaxInstructions:     a.MaxInstructions,
 		Coverage:            coverage,
+		Profile:             profile,
 		FuzzSeed:            a.FuzzSeed,
 	}
 }

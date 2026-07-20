@@ -31,7 +31,9 @@ pawntest ./tests --format junit --output test-results.xml
 
 ## Configuration
 
-Pawntest loads the first `pawntest.json`, `pawntest.yaml`, `pawntest.yml`, or `pawntest.toml` file in the working directory.
+Pawntest reads `pawn.json` or `pawn.yaml` from the project root. A local
+`pawntest.json`, `pawntest.yaml`, `pawntest.yml`, or `pawntest.toml` can override
+the project settings.
 
 ```toml
 pawncc  = "./tools/pawncc"
@@ -57,3 +59,8 @@ See [Configuration](docs/config.md) for all options.
 - [Go API](docs/go-api.md)
 - [Reports](docs/reports.md)
 - [Limitations](docs/limitations.md)
+
+## Contributing
+
+Small test cases, runner fixes, and documentation corrections are welcome. See
+[CONTRIBUTING.md](CONTRIBUTING.md).

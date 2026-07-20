@@ -1,4 +1,4 @@
-# Writing Tests
+# Writing tests
 
 Name files `<name>.test.pwn` or `<name>.test.inc`, include `<pawntest>`, and use `TEST`:
 

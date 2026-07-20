@@ -37,6 +37,7 @@ type Runner struct {
 	SourcePath          string
 	UpdateSnapshots     bool
 	Coverage            *Coverage
+	Profile             *Profile
 	FuzzSeed            int64
 	Providers           []string
 }
@@ -74,9 +75,7 @@ func (r Runner) RunFile(path string) (suite Suite, returnErr error) {
 	}
 	defer func() { returnErr = errors.Join(returnErr, providers.Close()) }()
 
-	if r.Coverage != nil {
-		r.Coverage.instrument(vm)
-	}
+	r.instrument(vm)
 
 	tests, err := r.selectTests(publics)
 	if err != nil {
@@ -160,6 +159,31 @@ func (r Runner) RunFile(path string) (suite Suite, returnErr error) {
 	}
 
 	return suite, nil
+}
+
+func (r Runner) instrument(vm backend.VM) {
+	if r.Coverage == nil && r.Profile == nil {
+		return
+	}
+
+	instrumenter, ok := vm.(backend.CoverageInstrumenter)
+	if !ok {
+		return
+	}
+
+	if r.Coverage != nil {
+		r.Coverage.prepare(vm)
+	}
+
+	instrumenter.SetInstructionObserver(func(cip backend.Cell) {
+		if r.Coverage != nil {
+			r.Coverage.observe(vm, cip)
+		}
+
+		if r.Profile != nil {
+			r.Profile.observe(vm, cip)
+		}
+	})
 }
 
 func (r Runner) backend() backend.Backend {

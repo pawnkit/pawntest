@@ -23,10 +23,10 @@ func NewCoverage() *Coverage {
 	return &Coverage{files: map[string]map[int]int{}}
 }
 
-func (coverage *Coverage) instrument(vm backend.VM) {
+func (coverage *Coverage) prepare(vm backend.VM) {
 	instrumenter, ok := vm.(backend.CoverageInstrumenter)
 
-	locator, hasLocator := vm.(backend.DebugLocator)
+	_, hasLocator := vm.(backend.DebugLocator)
 	if !ok || !hasLocator {
 		return
 	}
@@ -38,20 +38,26 @@ func (coverage *Coverage) instrument(vm backend.VM) {
 		}
 	}
 	coverage.mu.Unlock()
-	instrumenter.SetInstructionObserver(func(cip backend.Cell) {
-		file, line, _, ok := locator.DebugLocation(cip)
-		if !ok || file == "" || line <= 0 {
-			return
-		}
+}
 
-		coverage.mu.Lock()
-		if lines := coverage.files[file]; lines != nil {
-			if _, registered := lines[line]; registered {
-				lines[line]++
-			}
+func (coverage *Coverage) observe(vm backend.VM, cip backend.Cell) {
+	locator, ok := vm.(backend.DebugLocator)
+	if !ok {
+		return
+	}
+
+	file, line, _, ok := locator.DebugLocation(cip)
+	if !ok || file == "" || line <= 0 {
+		return
+	}
+
+	coverage.mu.Lock()
+	if lines := coverage.files[file]; lines != nil {
+		if _, registered := lines[line]; registered {
+			lines[line]++
 		}
-		coverage.mu.Unlock()
-	})
+	}
+	coverage.mu.Unlock()
 }
 
 func coverageRelevant(file string, line int, function string) bool {

@@ -4,10 +4,15 @@ package cli
 
 import (
 	"bytes"
+	"context"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/pawnkit/pawntest/internal/compiler"
 )
 
 func TestPawnCCIntegrationListsAndRunsCompiledSource(t *testing.T) {
@@ -157,5 +162,46 @@ func TestPawnCCIntegrationListsAndRunsCompiledSource(t *testing.T) {
 	}
 	if !bytes.Contains(coverageData, []byte("SF:"+filepath.Join(testsDir, "passing.test.pwn"))) || bytes.Contains(coverageData, []byte("pawntest.inc")) {
 		t.Fatalf("unexpected coverage:\n%s", coverageData)
+	}
+}
+
+func TestPawnCCIntegrationRunsIsolatedPlugin(t *testing.T) {
+	if runtime.GOOS != "linux" || runtime.GOARCH != "amd64" {
+		t.Skip("x64 Linux fixture")
+	}
+	pawncc := os.Getenv("PAWNTEST_PAWNCC")
+	if pawncc == "" && os.Getenv("PAWNTEST_PLUGIN_INTEGRATION") != "" {
+		installed, err := compiler.InstallOpenMPCompiler(context.Background(), t.TempDir())
+		if err != nil {
+			t.Fatal(err)
+		}
+		pawncc = installed.Path
+	}
+	if pawncc == "" {
+		t.Skip("set PAWNTEST_PAWNCC or PAWNTEST_PLUGIN_INTEGRATION to run plugin integration test")
+	}
+	compiler, err := exec.LookPath("cc")
+	if err != nil {
+		t.Skip("C compiler unavailable")
+	}
+	pluginRoot, err := filepath.Abs(filepath.Join("..", "..", "..", "pawn-plugin-host"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	directory := t.TempDir()
+	worker := filepath.Join(directory, "pawn-plugin-host-x64")
+	loader := filepath.Join(directory, "pawn-plugin-loader")
+	plugin := filepath.Join(directory, "fixture.so")
+	commands := []*exec.Cmd{exec.Command("go", "build", "-o", worker, filepath.Join(pluginRoot, "cmd", "pawn-plugin-host-x64")), exec.Command(compiler, filepath.Join(pluginRoot, "native", "legacy_loader.c"), "-ldl", "-o", loader), exec.Command(compiler, "-shared", "-fPIC", filepath.Join(pluginRoot, "fixtures", "legacy_plugin.c"), "-o", plugin)}
+	for _, command := range commands {
+		command.Dir = pluginRoot
+		if output, err := command.CombinedOutput(); err != nil {
+			t.Fatalf("build fixture: %v: %s", err, output)
+		}
+	}
+	var stdout, stderr bytes.Buffer
+	code := Run([]string{"--pawncc", pawncc, "--cache-dir", filepath.Join(directory, "cache"), "--native-plugin", plugin, "--plugin-architecture", "x64", "--plugin-worker-64", worker, filepath.Join("..", "..", "testdata", "pawn", "plugin.test.pwn")}, &stdout, &stderr)
+	if code != ExitOK || !strings.Contains(stdout.String(), "PASS  test_isolated_plugin_native") {
+		t.Fatalf("exit=%d stdout=%s stderr=%s", code, stdout.String(), stderr.String())
 	}
 }

@@ -1,5 +1,10 @@
 # Contributing
 
+PawnKit is maintained by volunteers, so reviews may take a little time.
+
+Small test-runner fixes, Pawn examples, and documentation corrections are
+welcome. A minimal `.test.pwn` file is often enough to explain a problem.
+
 Use the Go version from `go.mod` and run:
 
 ```sh
