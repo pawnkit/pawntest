@@ -37,15 +37,17 @@ func loadProjectConfig(start string) (Config, string, error) {
 		return Config{}, "", nil
 	}
 
-	cfg := Config{Include: absolutePaths(root.Dir, result.Manifest.EffectiveIncludePaths())}
+	rootDir := filepath.Clean(root.Dir)
+	cfg := Config{Include: absolutePaths(rootDir, result.Manifest.EffectiveIncludePaths())}
+
 	if err := applyProjectExtension(&cfg, result.Manifest.PawnKit); err != nil {
 		return Config{}, "", err
 	}
 
-	cfg.Include = absolutePaths(root.Dir, cfg.Include)
-	cfg.Tests = absolutePaths(root.Dir, cfg.Tests)
+	cfg.Include = absolutePaths(rootDir, cfg.Include)
+	cfg.Tests = absolutePaths(rootDir, cfg.Tests)
 
-	return cfg, root.Dir, cfg.validate()
+	return cfg, rootDir, cfg.validate()
 }
 
 func applyProjectExtension(cfg *Config, extension *manifest.PawnKitExtension) error {
