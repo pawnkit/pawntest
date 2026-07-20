@@ -453,6 +453,10 @@ func (a TestCmd) listTests(ctx context.Context, stdout io.Writer, files []string
 		return errors.New("no tests found")
 	}
 
+	if a.Format == FormatJSON {
+		return report.ListJSON(stdout, names)
+	}
+
 	return report.List(stdout, names)
 }
 

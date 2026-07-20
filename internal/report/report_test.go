@@ -138,6 +138,19 @@ func TestJSONUsesDurationMSAndSummary(t *testing.T) {
 	}
 }
 
+func TestListJSONUsesDiscoverySchema(t *testing.T) {
+	var out bytes.Buffer
+	if err := ListJSON(&out, []string{"test_addition"}); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, want := range []string{`"schemaVersion": 1`, `"id": "test_addition"`, `"label": "addition"`} {
+		if !strings.Contains(out.String(), want) {
+			t.Fatalf("discovery output missing %q:\n%s", want, out.String())
+		}
+	}
+}
+
 func TestJUnitUsesSecondsDuration(t *testing.T) {
 	suite := runner.Suite{Results: []runner.Result{{Name: "test_pass", Source: "tests/pass.test.pwn", Status: runner.Pass, Duration: 1500 * time.Millisecond}}}
 

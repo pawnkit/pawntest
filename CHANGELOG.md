@@ -12,6 +12,7 @@ versioning after `v1.0.0`.
 
 - Project manifest configuration and instruction profiles.
 - Opt-in legacy plugin natives through `pawn-plugin-host`.
+- JSON test discovery for editor integrations.
 
 ## 1.0.1 - 2026-07-13
 
