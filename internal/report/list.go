@@ -14,12 +14,22 @@ type discoveryDocument struct {
 type discoveryTest struct {
 	ID    string `json:"id"`
 	Label string `json:"label"`
+	File  string `json:"file,omitempty"`
+	Line  int    `json:"line,omitempty"`
 }
 
-func ListJSON(w io.Writer, names []string) error {
-	tests := make([]discoveryTest, 0, len(names))
-	for _, name := range names {
-		tests = append(tests, discoveryTest{ID: name, Label: strings.TrimPrefix(name, "test_")})
+type DiscoveryTest struct {
+	Name string
+	File string
+	Line int
+}
+
+func ListJSON(w io.Writer, discovered []DiscoveryTest) error {
+	tests := make([]discoveryTest, 0, len(discovered))
+	for _, test := range discovered {
+		tests = append(tests, discoveryTest{
+			ID: test.Name, Label: strings.TrimPrefix(test.Name, "test_"), File: test.File, Line: test.Line,
+		})
 	}
 
 	encoder := json.NewEncoder(w)

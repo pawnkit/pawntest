@@ -140,11 +140,11 @@ func TestJSONUsesDurationMSAndSummary(t *testing.T) {
 
 func TestListJSONUsesDiscoverySchema(t *testing.T) {
 	var out bytes.Buffer
-	if err := ListJSON(&out, []string{"test_addition"}); err != nil {
+	if err := ListJSON(&out, []DiscoveryTest{{Name: "test_addition", File: "tests/math.test.pwn", Line: 4}}); err != nil {
 		t.Fatal(err)
 	}
 
-	for _, want := range []string{`"schemaVersion": 1`, `"id": "test_addition"`, `"label": "addition"`} {
+	for _, want := range []string{`"schemaVersion": 1`, `"id": "test_addition"`, `"label": "addition"`, `"file": "tests/math.test.pwn"`, `"line": 4`} {
 		if !strings.Contains(out.String(), want) {
 			t.Fatalf("discovery output missing %q:\n%s", want, out.String())
 		}

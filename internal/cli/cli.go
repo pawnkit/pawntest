@@ -438,29 +438,34 @@ func (a TestCmd) ensureProviders(ctx context.Context) ([]string, error) {
 }
 
 func (a TestCmd) listTests(ctx context.Context, stdout io.Writer, files []string, r runner.Runner) error {
-	var names []string
+	var tests []report.DiscoveryTest
 
 	for _, file := range files {
-		fileNames, err := a.listFileTests(ctx, file, r)
+		fileTests, err := a.listFileTests(ctx, file, r)
 		if err != nil {
 			return err
 		}
 
-		names = append(names, fileNames...)
+		tests = append(tests, fileTests...)
 	}
 
-	if len(names) == 0 && !a.AllowEmpty {
+	if len(tests) == 0 && !a.AllowEmpty {
 		return errors.New("no tests found")
 	}
 
 	if a.Format == FormatJSON {
-		return report.ListJSON(stdout, names)
+		return report.ListJSON(stdout, tests)
+	}
+
+	names := make([]string, len(tests))
+	for i, test := range tests {
+		names[i] = test.Name
 	}
 
 	return report.List(stdout, names)
 }
 
-func (a TestCmd) listFileTests(ctx context.Context, file string, r runner.Runner) ([]string, error) {
+func (a TestCmd) listFileTests(ctx context.Context, file string, r runner.Runner) ([]report.DiscoveryTest, error) {
 	expectations, err := compiler.DiagnosticExpectations(file)
 	if err != nil {
 		return nil, err
@@ -476,7 +481,12 @@ func (a TestCmd) listFileTests(ctx context.Context, file string, r runner.Runner
 			return nil, nil
 		}
 
-		return []string{diagnosticTestName(file)}, nil
+		return []report.DiscoveryTest{{Name: diagnosticTestName(file), File: file}}, nil
+	}
+
+	locations, err := compiler.TestLocations(file)
+	if err != nil {
+		return nil, err
 	}
 
 	amx, err := a.ensureAMX(ctx, file)
@@ -489,12 +499,12 @@ func (a TestCmd) listFileTests(ctx context.Context, file string, r runner.Runner
 		return nil, err
 	}
 
-	names := make([]string, 0, len(tests))
+	discovered := make([]report.DiscoveryTest, 0, len(tests))
 	for _, test := range tests {
-		names = append(names, test.Name)
+		discovered = append(discovered, report.DiscoveryTest{Name: test.Name, File: file, Line: locations[test.Name]})
 	}
 
-	return names, nil
+	return discovered, nil
 }
 
 func aggregateSuites(suites []runner.Suite, duration time.Duration) runner.Suite {

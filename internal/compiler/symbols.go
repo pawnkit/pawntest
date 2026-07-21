@@ -13,12 +13,22 @@ const pawnSymbolLimit = 31
 var generatedSymbolPattern = regexp.MustCompile(`^\s*(TEST(?:_CASE[23]?)?|FIXTURE)\s*\(\s*([A-Za-z_][A-Za-z0-9_]*)`)
 
 func validateGeneratedSymbols(path string) error {
+	_, err := testLocations(path, true)
+	return err
+}
+
+func TestLocations(path string) (map[string]int, error) {
+	return testLocations(path, false)
+}
+
+func testLocations(path string, validate bool) (map[string]int, error) {
 	f, err := os.Open(path)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer f.Close()
 
+	locations := make(map[string]int)
 	scanner := bufio.NewScanner(f)
 	line := 0
 
@@ -31,6 +41,9 @@ func validateGeneratedSymbols(path string) error {
 		}
 
 		macro, name := match[1], match[2]
+		if macro != "FIXTURE" {
+			locations["test_"+name] = line
+		}
 
 		prefix, suffix := "test_", ""
 		if macro == "FIXTURE" {
@@ -38,19 +51,19 @@ func validateGeneratedSymbols(path string) error {
 		}
 
 		generated := prefix + name + suffix
-		if len(generated) <= pawnSymbolLimit {
+		if !validate || len(generated) <= pawnSymbolLimit {
 			continue
 		}
 
 		maxName := pawnSymbolLimit - len(prefix) - len(suffix)
 
-		return fmt.Errorf(
+		return nil, fmt.Errorf(
 			"%s:%d: %s name %q generates Pawn symbol %q (%d characters); maximum source name length is %d",
 			path, line, macro, name, generated, len(generated), maxName,
 		)
 	}
 
-	return scanner.Err()
+	return locations, scanner.Err()
 }
 
 func stripLineComment(line string) string {

@@ -55,6 +55,19 @@ FIXTURE(short_fixture) {}
 	}
 }
 
+func TestTestLocationsFindsTestMacros(t *testing.T) {
+	path := writeSymbolTest(t, "TEST(first) {}\n\nTEST_CASE(second, value, 1) {}\nFIXTURE(shared) {}\n")
+
+	locations, err := TestLocations(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if locations["test_first"] != 1 || locations["test_second"] != 3 || len(locations) != 2 {
+		t.Fatalf("locations = %#v", locations)
+	}
+}
+
 func writeSymbolTest(t *testing.T, source string) string {
 	t.Helper()
 
