@@ -4,6 +4,12 @@ Notable changes are documented in GitHub Releases. The project follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and semantic
 versioning after `v1.0.0`.
 
+## 1.1.3 - 2026-07-23
+
+### Fixed
+
+- Updated runtime, plugin-host, and project dependencies.
+
 ## 1.1.2 - 2026-07-21
 
 ### Added
