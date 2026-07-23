@@ -7,7 +7,7 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/pawnkit/goamx v1.1.0
 	github.com/pawnkit/pawn-plugin-host v0.1.1
-	github.com/pawnkit/pawn-project v0.1.4
+	github.com/pawnkit/pawn-project v0.1.5
 	github.com/pawnkit/pawnkit-core v0.1.0
 )
 

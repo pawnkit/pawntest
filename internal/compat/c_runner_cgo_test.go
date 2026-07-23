@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/pawnkit/pawntest/internal/backend"
 	goamx "github.com/pawnkit/goamx/vm"
+	"github.com/pawnkit/pawntest/internal/backend"
 )
 
 func TestCanonicalCParity(t *testing.T) {
