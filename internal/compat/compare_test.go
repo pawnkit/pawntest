@@ -10,8 +10,10 @@ import (
 
 func TestCompareEqualBackends(t *testing.T) {
 	result, err := Compare("left", backend.NewGoAMXBackend(), "right", backend.NewGoAMXBackend(), Case{
-		Name: "const.amx",
-		AMX:  compatAMX(t, compatInstr(nil, goamx.OP_CONST_PRI, 42), compatInstr(nil, goamx.OP_HALT, 0)),
+		Name:            "const.amx",
+		AMX:             compatAMX(t, compatInstr(nil, goamx.OP_CONST_PRI, 42), compatInstr(nil, goamx.OP_HALT, 0)),
+		ReferenceEngine: "goamx",
+		ReferenceTier:   "pure-amx",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -19,6 +21,13 @@ func TestCompareEqualBackends(t *testing.T) {
 
 	if !result.Equal() {
 		t.Fatalf("expected equal comparison, got %#v", result)
+	}
+}
+
+func TestCompareRequiresReferenceRuntime(t *testing.T) {
+	_, err := Compare("left", backend.NewGoAMXBackend(), "right", backend.NewGoAMXBackend(), Case{})
+	if err == nil {
+		t.Fatal("missing reference runtime was accepted")
 	}
 }
 

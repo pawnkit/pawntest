@@ -54,8 +54,10 @@ func TestCanonicalCParity(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			result, err := Compare("go", backend.NewGoAMXBackend(), "canonical-c", NewCBackend(), Case{
-				Name: tc.name + ".amx",
-				AMX:  compatAMX(t, tc.code),
+				Name:            tc.name + ".amx",
+				AMX:             compatAMX(t, tc.code),
+				ReferenceEngine: "canonical-c-amx",
+				ReferenceTier:   "pure-amx",
 			})
 			if err != nil {
 				t.Fatal(err)
@@ -112,8 +114,11 @@ public test_control(value)
 		t.Fatal(err)
 	}
 	result, err := Compare("go", backend.NewGoAMXBackend(), "canonical-c", NewCBackend(), Case{
-		Name: "compiled-compact.amx", AMX: image,
-		PublicArgs: map[string][]backend.Cell{"test_add": {20, 22}, "test_control": {1}},
+		Name:            "compiled-compact.amx",
+		AMX:             image,
+		ReferenceEngine: "canonical-c-amx",
+		ReferenceTier:   "pure-amx",
+		PublicArgs:      map[string][]backend.Cell{"test_add": {20, 22}, "test_control": {1}},
 	})
 	if err != nil {
 		t.Fatal(err)

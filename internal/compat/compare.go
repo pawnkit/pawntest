@@ -1,6 +1,7 @@
 package compat
 
 import (
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -26,6 +27,10 @@ func (r Result) Equal() bool {
 }
 
 func Compare(leftName string, left backend.Backend, rightName string, right backend.Backend, tc Case) (Result, error) {
+	if tc.ReferenceEngine == "" || tc.ReferenceTier == "" {
+		return Result{}, errors.New("compatibility case needs a reference runtime")
+	}
+
 	leftVM, err := left.LoadBytes(tc.Name, tc.AMX)
 	if err != nil {
 		return Result{}, fmt.Errorf("%s load: %w", leftName, err)
