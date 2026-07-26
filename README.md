@@ -1,5 +1,7 @@
 # pawntest
 
+[![Maturity: preview](https://img.shields.io/badge/maturity-preview-blue)](.pawnkit/support.json)
+
 A Go CLI for discovering, compiling, and running Pawn tests for SA-MP and open.mp projects. Tests run on the pure-Go [`pawnkit/goamx`](https://github.com/pawnkit/goamx) backend, so no game server is required.
 
 See [Installation](docs/install.md) for release binaries and supported platforms.

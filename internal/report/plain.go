@@ -22,6 +22,10 @@ type PlainOptions struct {
 }
 
 func PlainWithOptions(w io.Writer, suite runner.Suite, opts PlainOptions) error {
+	if suite.Runtime.RuntimeTier != "" && suite.Runtime.RuntimeTier != "platform-simulation" {
+		fmt.Fprintf(w, "Runtime: %s (%s %s)\n\n", suite.Runtime.RuntimeTier, suite.Runtime.Engine.Name, suite.Runtime.Engine.Version)
+	}
+
 	groups := groupBySource(suite.Results)
 	printedGroup := false
 

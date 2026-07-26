@@ -314,6 +314,8 @@ func (a TestCmd) execute(ctx context.Context, stdout, stderr io.Writer) error {
 	}
 
 	all := aggregateSuites(suites, time.Since(runStarted))
+
+	all.Runtime = a.runtimeMetadata()
 	if len(all.Results) == 0 && !a.AllowEmpty {
 		return errors.New("no tests found")
 	}
@@ -351,6 +353,37 @@ func (a TestCmd) execute(ctx context.Context, stdout, stderr io.Writer) error {
 	}
 
 	return nil
+}
+
+func (a TestCmd) runtimeMetadata() runner.RuntimeMetadata {
+	metadata := runner.RuntimeMetadata{
+		SchemaVersion: 1,
+		RuntimeTier:   "platform-simulation",
+		Engine:        runner.RuntimeComponent{Name: "pawntest", Version: Version},
+		Target:        "openmp",
+		Capabilities: []string{
+			"amx",
+			"openmp.callbacks",
+			"openmp.natives",
+			"openmp.state",
+		},
+		Limitations: []string{
+			"Network and real server scheduling are not simulated.",
+		},
+	}
+	if a.NativePlugin == "" {
+		return metadata
+	}
+
+	metadata.RuntimeTier = "native-plugin-integration"
+	metadata.Plugin = &runner.RuntimePlugin{
+		Name:           filepath.Base(a.NativePlugin),
+		Architecture:   a.PluginArchitecture,
+		WorkerProtocol: 1,
+	}
+	metadata.Limitations = append(metadata.Limitations, "The plugin worker limits crashes and hangs; it is not a security sandbox.")
+
+	return metadata
 }
 
 func (a TestCmd) validate() error {

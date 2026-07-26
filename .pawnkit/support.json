@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "repository": "pawnkit/pawntest",
+  "maturity": "preview",
+  "platforms": ["linux-amd64", "windows-amd64", "darwin-arm64"],
+  "profiles": ["samp-037", "openmp"],
+  "compilers": [],
+  "contracts": [
+    { "name": "pawntest", "major": 1 },
+    { "name": "pawn-project", "major": 1 }
+  ],
+  "limitations": [
+    "Runtime fidelity is not yet included in machine-readable test results.",
+    "The compatibility smoke checks installation on all platforms; runtime tests run on Linux."
+  ]
+}

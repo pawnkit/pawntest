@@ -105,6 +105,31 @@ func TestWriteReportColorAlwaysOnlyAppliesToPlain(t *testing.T) {
 	}
 }
 
+func TestRuntimeMetadataNamesSimulation(t *testing.T) {
+	metadata := (TestCmd{}).runtimeMetadata()
+	if metadata.RuntimeTier != "platform-simulation" {
+		t.Fatalf("runtime tier = %q", metadata.RuntimeTier)
+	}
+
+	if metadata.Engine.Name != "pawntest" || metadata.Target != "openmp" {
+		t.Fatalf("runtime metadata = %#v", metadata)
+	}
+}
+
+func TestRuntimeMetadataNamesPluginWithoutPrivatePath(t *testing.T) {
+	metadata := (TestCmd{
+		NativePlugin:       filepath.Join("private", "plugins", "streamer.so"),
+		PluginArchitecture: pluginArchitectureX64,
+	}).runtimeMetadata()
+	if metadata.RuntimeTier != "native-plugin-integration" {
+		t.Fatalf("runtime tier = %q", metadata.RuntimeTier)
+	}
+
+	if metadata.Plugin == nil || metadata.Plugin.Name != "streamer.so" || metadata.Plugin.Architecture != pluginArchitectureX64 {
+		t.Fatalf("plugin metadata = %#v", metadata.Plugin)
+	}
+}
+
 func TestEnsureCompilerAvailableInstallsWhenUserConfirms(t *testing.T) {
 	t.Setenv("PATH", t.TempDir())
 	cmd := TestCmd{

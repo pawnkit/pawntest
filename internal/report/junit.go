@@ -10,13 +10,19 @@ import (
 )
 
 type junitSuite struct {
-	XMLName  xml.Name    `xml:"testsuite"`
-	Name     string      `xml:"name,attr,omitempty"`
-	Tests    int         `xml:"tests,attr"`
-	Failures int         `xml:"failures,attr"`
-	Errors   int         `xml:"errors,attr"`
-	Skipped  int         `xml:"skipped,attr"`
-	Cases    []junitCase `xml:"testcase"`
+	XMLName    xml.Name        `xml:"testsuite"`
+	Name       string          `xml:"name,attr,omitempty"`
+	Tests      int             `xml:"tests,attr"`
+	Failures   int             `xml:"failures,attr"`
+	Errors     int             `xml:"errors,attr"`
+	Skipped    int             `xml:"skipped,attr"`
+	Properties []junitProperty `xml:"properties>property,omitempty"`
+	Cases      []junitCase     `xml:"testcase"`
+}
+
+type junitProperty struct {
+	Name  string `xml:"name,attr"`
+	Value string `xml:"value,attr"`
 }
 
 type junitCase struct {
@@ -40,6 +46,15 @@ type junitSkipped struct {
 
 func JUnit(w io.Writer, suite runner.Suite) error {
 	js := junitSuite{Name: "pawntest", Tests: len(suite.Results)}
+	if suite.Runtime.RuntimeTier != "" {
+		js.Properties = []junitProperty{
+			{Name: "pawnkit.runtimeTier", Value: suite.Runtime.RuntimeTier},
+			{Name: "pawnkit.runtimeEngine", Value: suite.Runtime.Engine.Name},
+			{Name: "pawnkit.runtimeEngineVersion", Value: suite.Runtime.Engine.Version},
+			{Name: "pawnkit.target", Value: suite.Runtime.Target},
+		}
+	}
+
 	for _, r := range suite.Results {
 		c := junitCase{Name: r.Name, Class: r.Source, File: r.Source, Time: fmt.Sprintf("%.3f", r.Duration.Seconds())}
 		if len(r.Warnings) > 0 {

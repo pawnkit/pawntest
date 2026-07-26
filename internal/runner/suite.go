@@ -3,8 +3,9 @@ package runner
 import "time"
 
 type Suite struct {
-	Results  []Result      `json:"results"`
-	Duration time.Duration `json:"duration"`
+	Results  []Result        `json:"results"`
+	Duration time.Duration   `json:"duration"`
+	Runtime  RuntimeMetadata `json:"runtime"`
 }
 
 type Summary struct {

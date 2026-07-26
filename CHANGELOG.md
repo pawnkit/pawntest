@@ -4,6 +4,13 @@ Notable changes are documented in GitHub Releases. The project follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and semantic
 versioning after `v1.0.0`.
 
+## 1.2.0 - 2026-07-25
+
+### Added
+
+- Report runtime-fidelity metadata in JSON, TAP, JUnit, and plain output.
+- Declare and validate the repository support policy in CI.
+
 ## 1.1.4 - 2026-07-23
 
 ### Changed

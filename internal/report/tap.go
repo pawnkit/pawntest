@@ -8,6 +8,11 @@ import (
 )
 
 func TAP(w io.Writer, suite runner.Suite) error {
+	if suite.Runtime.RuntimeTier != "" {
+		fmt.Fprintf(w, "# runtime-tier: %s\n", suite.Runtime.RuntimeTier)
+		fmt.Fprintf(w, "# runtime-engine: %s %s\n", suite.Runtime.Engine.Name, suite.Runtime.Engine.Version)
+	}
+
 	fmt.Fprintf(w, "1..%d\n", len(suite.Results))
 
 	for i, r := range suite.Results {

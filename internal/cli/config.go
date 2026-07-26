@@ -26,6 +26,9 @@ const (
 	ColorAuto   Color = "auto"
 	ColorAlways Color = "always"
 	ColorNever  Color = "never"
+
+	pluginArchitectureX86 = "x86"
+	pluginArchitectureX64 = "x64"
 )
 
 type Config struct {
@@ -170,7 +173,7 @@ func (cfg Config) validate() error {
 		return fmt.Errorf("invalid coverage format %q", cfg.CoverageFormat)
 	}
 
-	if cfg.PluginArchitecture != "" && cfg.PluginArchitecture != "x86" && cfg.PluginArchitecture != "x64" {
+	if cfg.PluginArchitecture != "" && cfg.PluginArchitecture != pluginArchitectureX86 && cfg.PluginArchitecture != pluginArchitectureX64 {
 		return fmt.Errorf("invalid plugin architecture %q", cfg.PluginArchitecture)
 	}
 

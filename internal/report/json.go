@@ -8,8 +8,9 @@ import (
 )
 
 type jsonSuite struct {
-	Summary runner.Summary `json:"summary"`
-	Results []jsonResult   `json:"results"`
+	Runtime runner.RuntimeMetadata `json:"runtime"`
+	Summary runner.Summary         `json:"summary"`
+	Results []jsonResult           `json:"results"`
 }
 
 type jsonResult struct {
@@ -24,7 +25,7 @@ type jsonResult struct {
 }
 
 func JSON(w io.Writer, suite runner.Suite) error {
-	out := jsonSuite{Summary: suite.Summary(), Results: make([]jsonResult, 0, len(suite.Results))}
+	out := jsonSuite{Runtime: suite.Runtime, Summary: suite.Summary(), Results: make([]jsonResult, 0, len(suite.Results))}
 	for _, result := range suite.Results {
 		out.Results = append(out.Results, jsonResult{
 			Name:       result.Name,
