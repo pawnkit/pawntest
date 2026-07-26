@@ -7,10 +7,11 @@
   "compilers": [],
   "contracts": [
     { "name": "pawntest", "major": 1 },
-    { "name": "pawn-project", "major": 1 }
+    { "name": "pawn-project", "major": 1 },
+    { "name": "pawn-runtime", "major": 1 }
   ],
   "limitations": [
-    "Runtime fidelity is not yet included in machine-readable test results.",
+    "Platform simulation does not cover network behavior or real server scheduling.",
     "The compatibility smoke checks installation on all platforms; runtime tests run on Linux."
   ]
 }
