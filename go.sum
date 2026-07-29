@@ -24,8 +24,8 @@ github.com/ncruces/go-strftime v1.0.0 h1:HMFp8mLCTPp341M/ZnA4qaf7ZlsbTc+miZjCLOF
 github.com/ncruces/go-strftime v1.0.0/go.mod h1:Fwc5htZGVVkseilnfgOVb9mKy6w1naJmn9CehxcKcls=
 github.com/pawnkit/goamx v1.1.2 h1:8qxT1tPEu3VMU2KU5Zd7E+ePLrsQ7b4ecISr9SA3Pf8=
 github.com/pawnkit/goamx v1.1.2/go.mod h1:wTqNYdT5gHO8OvlMBdIsYt+GFNnPe8wqKig6h0eRQ/A=
-github.com/pawnkit/pawn-plugin-host v0.1.3 h1:AAdYG+ZBfStAFC9EqxRrsyqH4yPC94hswkJi7hyHHaA=
-github.com/pawnkit/pawn-plugin-host v0.1.3/go.mod h1:eSgMZkEaZHs8DZzkRmY9i8A7yKX9g2nzjxcVJhKgYTU=
+github.com/pawnkit/pawn-plugin-host v0.1.4 h1:wMZxEltzVXt93MiwpA13frM6ITOLF40OBBGutCppPpE=
+github.com/pawnkit/pawn-plugin-host v0.1.4/go.mod h1:eSgMZkEaZHs8DZzkRmY9i8A7yKX9g2nzjxcVJhKgYTU=
 github.com/pawnkit/pawn-project v0.1.5 h1:iPqtblD6zfe+lNjuhOgvGwg+38inyKlPXudGbrqv0sM=
 github.com/pawnkit/pawn-project v0.1.5/go.mod h1:YpfzOLsIYMyp9ztXNC5DbNOOIFhMYUxrk/epKb3rPlg=
 github.com/pawnkit/pawnkit-core v0.1.0 h1:clhoN/nr+JyNMAcFTlubStPd3q4VeCNf44MJgYmFaDM=
