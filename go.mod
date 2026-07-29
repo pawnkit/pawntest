@@ -5,8 +5,8 @@ go 1.26.5
 require (
 	github.com/alecthomas/kong v1.15.0
 	github.com/google/go-cmp v0.7.0
-	github.com/pawnkit/goamx v1.1.0
-	github.com/pawnkit/pawn-plugin-host v0.1.1
+	github.com/pawnkit/goamx v1.1.2
+	github.com/pawnkit/pawn-plugin-host v0.1.3
 	github.com/pawnkit/pawn-project v0.1.5
 	github.com/pawnkit/pawnkit-core v0.1.0
 )
