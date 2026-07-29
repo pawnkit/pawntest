@@ -165,11 +165,11 @@ func (cfg Config) validate() error {
 		return fmt.Errorf("invalid config format %q", cfg.Format)
 	}
 
-	if cfg.Isolation != "" && cfg.Isolation != "test" && cfg.Isolation != "suite" {
+	if cfg.Isolation != "" && cfg.Isolation != isolationTest && cfg.Isolation != "suite" {
 		return fmt.Errorf("invalid isolation %q", cfg.Isolation)
 	}
 
-	if cfg.CoverageFormat != "" && cfg.CoverageFormat != "lcov" && cfg.CoverageFormat != "json" {
+	if cfg.CoverageFormat != "" && cfg.CoverageFormat != "lcov" && cfg.CoverageFormat != outputJSON {
 		return fmt.Errorf("invalid coverage format %q", cfg.CoverageFormat)
 	}
 
@@ -245,7 +245,7 @@ func (a *TestCmd) applyConfig(cfg Config) {
 		a.AllowUnknownNatives = true
 	}
 
-	if a.Isolation == "test" && cfg.Isolation != "" {
+	if a.Isolation == isolationTest && cfg.Isolation != "" {
 		a.Isolation = cfg.Isolation
 	}
 

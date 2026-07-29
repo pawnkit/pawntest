@@ -3,6 +3,7 @@ package cli
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"os"
@@ -75,6 +76,62 @@ func TestCacheCleanRemovesConfiguredDirectory(t *testing.T) {
 
 	if _, err := os.Stat(dir); !errors.Is(err, os.ErrNotExist) {
 		t.Fatalf("cache directory still exists: %v", err)
+	}
+}
+
+func TestCapabilitiesCommandDescribesTestAdapter(t *testing.T) {
+	t.Parallel()
+
+	var stdout, stderr bytes.Buffer
+
+	code := Run([]string{"capabilities", "--output", "json"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("exit = %d; stderr=%q", code, stderr.String())
+	}
+
+	var document struct {
+		ProtocolVersion int      `json:"protocolVersion"`
+		Tool            string   `json:"tool"`
+		Version         string   `json:"version"`
+		Commands        []string `json:"commands"`
+	}
+	if err := json.Unmarshal(stdout.Bytes(), &document); err != nil {
+		t.Fatal(err)
+	}
+
+	if document.ProtocolVersion != 1 || document.Tool != toolName {
+		t.Fatalf("capabilities = %#v", document)
+	}
+
+	if diff := cmp.Diff([]string{adapterTestCommand}, document.Commands); diff != "" {
+		t.Fatalf("commands mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestAdapterTestRunsFromProjectDirectory(t *testing.T) {
+	project := t.TempDir()
+	if err := os.WriteFile(filepath.Join(project, "pawntest.json"), []byte(`{"allow_empty":true}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	var stdout, stderr bytes.Buffer
+
+	code := Run([]string{"test", "--project", project, "--output", "json"}, &stdout, &stderr)
+	if code != ExitOK {
+		t.Fatalf("exit = %d; stderr=%q", code, stderr.String())
+	}
+
+	var result struct {
+		SchemaVersion int    `json:"schemaVersion"`
+		Status        string `json:"status"`
+		Message       string `json:"message"`
+	}
+	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+		t.Fatal(err)
+	}
+
+	if result.SchemaVersion != 1 || result.Status != "passed" || result.Message != "tests passed" {
+		t.Fatalf("result = %#v", result)
 	}
 }
 

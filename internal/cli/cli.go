@@ -3,6 +3,7 @@ package cli
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -35,6 +36,11 @@ const (
 	ExitFailed   = 1
 	ExitUsage    = 2
 	ExitInternal = 3
+
+	adapterTestCommand = "test"
+	isolationTest      = "test"
+	outputJSON         = "json"
+	toolName           = "pawntest"
 
 	ansiReset  = "\x1b[0m"
 	ansiBold   = "\x1b[1m"
@@ -91,6 +97,15 @@ type CacheCleanCmd struct {
 
 type CacheCmd struct {
 	Clean CacheCleanCmd `cmd:"" help:"Remove cached files."`
+}
+
+type CapabilitiesCmd struct {
+	Output string `default:"json" enum:"json" help:"Output format."`
+}
+
+type AdapterTestCmd struct {
+	Project string `required:"" help:"Project directory."`
+	Output  string `default:"json" enum:"json" help:"Output format."`
 }
 
 type TestCmd struct {
@@ -151,10 +166,12 @@ func (versionFlag) BeforeApply(app *kong.Kong, vars kong.Vars) error {
 }
 
 type CLI struct {
-	Version versionFlag `name:"version" short:"V" help:"Print version and exit."`
-	Test    TestCmd     `cmd:"" default:"withargs" help:"Run Pawn tests (default command)."`
-	Doctor  DoctorCmd   `cmd:"doctor"              help:"Print environment diagnostics and run a sample compile/check."`
-	Cache   CacheCmd    `cmd:"cache"               help:"Manage cached files."`
+	Version      versionFlag     `name:"version" short:"V" help:"Print version and exit."`
+	Run          TestCmd         `cmd:"" default:"withargs" help:"Run Pawn tests (default command)."`
+	Capabilities CapabilitiesCmd `cmd:"capabilities"        help:"Print adapter capabilities."`
+	Test         AdapterTestCmd  `cmd:"test"                help:"Run project tests through the PawnKit adapter."`
+	Doctor       DoctorCmd       `cmd:"doctor"              help:"Print environment diagnostics and run a sample compile/check."`
+	Cache        CacheCmd        `cmd:"cache"               help:"Manage cached files."`
 }
 
 var errTestsFailed = errors.New("tests failed")
@@ -164,7 +181,7 @@ func Run(args []string, stdout, stderr io.Writer) int {
 
 	parser, err := kong.New(
 		&cli,
-		kong.Name("pawntest"),
+		kong.Name(toolName),
 		kong.Description("Pawn test runner for SA-MP/open.mp-style projects."),
 		kong.Vars{"version": Version},
 	)
@@ -185,12 +202,16 @@ func Run(args []string, stdout, stderr io.Writer) int {
 	var execErr error
 
 	switch parsed.Command() {
+	case "capabilities":
+		execErr = cli.Capabilities.execute(stdout)
+	case adapterTestCommand:
+		execErr = cli.Test.execute(ctx, stdout)
 	case "doctor":
 		execErr = cli.Doctor.execute(ctx, stdout)
 	case "cache clean":
 		execErr = cli.Cache.Clean.execute(stdout)
 	default:
-		execErr = cli.Test.execute(ctx, stdout, stderr)
+		execErr = cli.Run.execute(ctx, stdout, stderr)
 	}
 
 	if execErr != nil {
@@ -204,6 +225,83 @@ func Run(args []string, stdout, stderr io.Writer) int {
 	}
 
 	return ExitOK
+}
+
+func (CapabilitiesCmd) execute(w io.Writer) error {
+	return json.NewEncoder(w).Encode(struct {
+		ProtocolVersion int      `json:"protocolVersion"`
+		Tool            string   `json:"tool"`
+		Version         string   `json:"version"`
+		Commands        []string `json:"commands"`
+	}{
+		ProtocolVersion: 1,
+		Tool:            toolName,
+		Version:         Version,
+		Commands:        []string{adapterTestCommand},
+	})
+}
+
+func (a AdapterTestCmd) execute(ctx context.Context, w io.Writer) error {
+	project, err := filepath.Abs(a.Project)
+	if err != nil {
+		return err
+	}
+
+	info, err := os.Stat(project)
+	if err != nil {
+		return err
+	}
+
+	if !info.IsDir() {
+		return fmt.Errorf("project is not a directory: %s", project)
+	}
+
+	previous, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+
+	if err := os.Chdir(project); err != nil {
+		return err
+	}
+	defer func() {
+		_ = os.Chdir(previous)
+	}()
+
+	var diagnostics strings.Builder
+
+	command := TestCmd{
+		Format:          FormatJSON,
+		Color:           ColorAuto,
+		Isolation:       isolationTest,
+		Seed:            1,
+		Repeat:          1,
+		MaxInstructions: 1_000_000,
+		Jobs:            1,
+		CoverageFormat:  "lcov",
+		ProfileOutput:   "profile.json",
+		WatchInterval:   500 * time.Millisecond,
+		FuzzSeed:        1,
+	}
+	err = command.execute(ctx, io.Discard, &diagnostics)
+
+	result := struct {
+		SchemaVersion int    `json:"schemaVersion"`
+		Status        string `json:"status"`
+		Message       string `json:"message,omitempty"`
+	}{
+		SchemaVersion: 1,
+		Status:        "passed",
+		Message:       "tests passed",
+	}
+	if errors.Is(err, errTestsFailed) {
+		result.Status = "failed"
+		result.Message = "tests failed"
+	} else if err != nil {
+		return err
+	}
+
+	return json.NewEncoder(w).Encode(result)
 }
 
 func (c CacheCleanCmd) execute(w io.Writer) error {
@@ -359,7 +457,7 @@ func (a TestCmd) runtimeMetadata() runner.RuntimeMetadata {
 	metadata := runner.RuntimeMetadata{
 		SchemaVersion: 1,
 		RuntimeTier:   "platform-simulation",
-		Engine:        runner.RuntimeComponent{Name: "pawntest", Version: Version},
+		Engine:        runner.RuntimeComponent{Name: toolName, Version: Version},
 		Target:        "openmp",
 		Capabilities: []string{
 			"amx",
@@ -613,7 +711,7 @@ func (a TestCmd) writeCoverage(coverage *runner.Coverage) error {
 	}
 	defer file.Close()
 
-	if a.CoverageFormat == "json" {
+	if a.CoverageFormat == outputJSON {
 		return coverage.WriteJSON(file)
 	}
 

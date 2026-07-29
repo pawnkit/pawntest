@@ -4,6 +4,12 @@ Notable changes are documented in GitHub Releases. The project follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and semantic
 versioning after `v1.0.0`.
 
+## 1.2.5 - 2026-07-29
+
+### Added
+
+- Added the test adapter used by `pawn check`.
+
 ## 1.2.4 - 2026-07-29
 
 ### Fixed

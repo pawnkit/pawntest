@@ -72,6 +72,21 @@ pawntest doctor
 pawntest cache clean
 ```
 
+## PawnKit adapter
+
+`pawn check` can run pawntest as its test step:
+
+```sh
+pawn check --test-tool pawntest
+```
+
+The adapter commands are meant for PawnKit clients:
+
+```sh
+pawntest capabilities --output json
+pawntest test --project . --output json
+```
+
 ## Exit codes
 
 | Code | Meaning |

@@ -11,6 +11,7 @@ Stable compatibility surfaces:
 - Pawn test macros and natives
 - Provider ABI version
 - JSON, JUnit, TAP, and coverage schemas
+- PawnKit test adapter protocol version 1
 - `pkg/pawntest` public API
 
 Provider source is compiled against the installed pawntest include. Precompiled
