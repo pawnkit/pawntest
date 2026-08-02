@@ -4,6 +4,12 @@ Notable changes are documented in GitHub Releases. The project follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and semantic
 versioning after `v1.0.0`.
 
+## 1.2.7 - 2026-08-02
+
+### Changed
+
+- Use pawn-project 0.34.2.
+
 ## 1.2.6 - 2026-08-02
 
 ### Changed
