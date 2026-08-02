@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
+	"os"
 	"strings"
 )
 
@@ -22,6 +24,10 @@ func fetchRelease(ctx context.Context, client *http.Client, url string) (release
 
 	req.Header.Set("Accept", "application/vnd.github+json")
 
+	if token := githubToken(url); token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
+
 	resp, err := client.Do(req)
 	if err != nil {
 		return releaseInfo{}, err
@@ -38,6 +44,19 @@ func fetchRelease(ctx context.Context, client *http.Client, url string) (release
 	}
 
 	return release, nil
+}
+
+func githubToken(rawURL string) string {
+	parsed, err := url.Parse(rawURL)
+	if err != nil || parsed.Host != "api.github.com" {
+		return ""
+	}
+
+	if token := os.Getenv("PAWN_GITHUB_TOKEN"); token != "" {
+		return token
+	}
+
+	return os.Getenv("GITHUB_TOKEN")
 }
 
 func selectAsset(assets []releaseAsset, goos, goarch string) (releaseAsset, error) {

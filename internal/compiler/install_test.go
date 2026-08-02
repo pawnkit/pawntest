@@ -35,6 +35,28 @@ func TestInstallOpenMPCompilerIntegration(t *testing.T) {
 	}
 }
 
+func TestGithubTokenUsesOnlyGitHubAPIURLs(t *testing.T) {
+	t.Setenv("PAWN_GITHUB_TOKEN", "pawn-token")
+	t.Setenv("GITHUB_TOKEN", "workflow-token")
+
+	if got := githubToken(OpenMPCompilerReleaseAPI); got != "pawn-token" {
+		t.Fatalf("githubToken() = %q, want pawn-token", got)
+	}
+
+	if got := githubToken("https://example.test/releases/latest"); got != "" {
+		t.Fatalf("githubToken(non-GitHub) = %q, want empty", got)
+	}
+}
+
+func TestGithubTokenFallsBackToWorkflowToken(t *testing.T) {
+	t.Setenv("PAWN_GITHUB_TOKEN", "")
+	t.Setenv("GITHUB_TOKEN", "workflow-token")
+
+	if got := githubToken(OpenMPCompilerReleaseAPI); got != "workflow-token" {
+		t.Fatalf("githubToken() = %q, want workflow-token", got)
+	}
+}
+
 func TestSelectAssetChoosesCurrentPlatformCompiler(t *testing.T) {
 	assets := []releaseAsset{
 		{Name: "pawnc-3.10.11-linux.tar.gz", BrowserDownloadURL: "linux"},

@@ -75,6 +75,7 @@ jobs:
         run: go test ./internal/compiler -run TestInstallOpenMPCompilerIntegration -count=1 -v
         env:
           PAWNTEST_INSTALL_INTEGRATION: "1"
+          GITHUB_TOKEN: ${{ github.token }}
       - name: Download official compiler for corpus
         if: matrix.os == 'ubuntu-latest'
         run: |

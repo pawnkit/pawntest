@@ -4,6 +4,13 @@ Notable changes are documented in GitHub Releases. The project follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and semantic
 versioning after `v1.0.0`.
 
+## 1.2.9 - 2026-08-02
+
+### Fixed
+
+- Authenticate GitHub release metadata requests when a workflow token is
+  available, avoiding unauthenticated API rate limits.
+
 ## 1.2.8 - 2026-08-02
 
 ### Fixed
