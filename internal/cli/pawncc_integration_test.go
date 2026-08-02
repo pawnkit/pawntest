@@ -163,6 +163,26 @@ func TestPawnCCIntegrationListsAndRunsCompiledSource(t *testing.T) {
 	if !bytes.Contains(coverageData, []byte("SF:"+filepath.Join(testsDir, "passing.test.pwn"))) || bytes.Contains(coverageData, []byte("pawntest.inc")) {
 		t.Fatalf("unexpected coverage:\n%s", coverageData)
 	}
+
+	profilePath := filepath.Join(t.TempDir(), "profile.json")
+	var profileOut, profileErr bytes.Buffer
+	code = Run([]string{
+		"--pawncc", pawncc,
+		"--cache-dir", filepath.Join(t.TempDir(), "profile-cache"),
+		"--profile",
+		"--profile-output", profilePath,
+		filepath.Join(testsDir, "passing.test.pwn"),
+	}, &profileOut, &profileErr)
+	if code != ExitOK {
+		t.Fatalf("profile run exit=%d stderr=%q stdout=%q", code, profileErr.String(), profileOut.String())
+	}
+	profileData, err := os.ReadFile(profilePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Contains(profileData, []byte(`"version":1`)) || !bytes.Contains(profileData, []byte(`"function":"test_addition"`)) {
+		t.Fatalf("unexpected profile: %s", profileData)
+	}
 }
 
 func TestPawnCCIntegrationRunsIsolatedPlugin(t *testing.T) {
