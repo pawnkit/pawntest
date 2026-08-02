@@ -144,7 +144,10 @@ func lockCompile(ctx context.Context, path string) (func(), error) {
 		}
 
 		if !os.IsExist(err) {
-			return nil, err
+			// Windows reports an existing, non-shareable lock as access denied.
+			if _, statErr := os.Stat(path); statErr != nil {
+				return nil, err
+			}
 		}
 
 		if info, statErr := os.Stat(path); statErr == nil && time.Since(info.ModTime()) > 30*time.Minute {
