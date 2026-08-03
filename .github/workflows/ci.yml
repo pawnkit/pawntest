@@ -131,7 +131,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
-      - uses: pawnkit/pawn-actions/support-check@v1.8.51
+      - uses: pawnkit/pawn-actions/support-check@v1.8.57
         with:
           repository: pawnkit/pawntest
           targets: linux-amd64,windows-amd64,darwin-arm64
