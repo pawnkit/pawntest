@@ -4,6 +4,12 @@ Notable changes are documented in GitHub Releases. The project follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and semantic
 versioning after `v1.0.0`.
 
+## 1.2.12 - 2026-08-03
+
+### Fixed
+
+- Bound AMX fuzz inputs so the CI fuzz check remains predictable.
+
 ## 1.2.11 - 2026-08-02
 
 ### Changed
